@@ -1,0 +1,102 @@
+/*
+ * First-screen styles. Extends the scaffold's plain-CSS approach: colours,
+ * spacing and radius all come from the custom properties defined on :root in
+ * src/index.css. No framework, no component library.
+ */
+
+/*
+ * index.css is imported after App.css, so .page__main's muted colour would win
+ * a same-specificity tie. Body copy on this screen should be full contrast;
+ * only descriptors are muted.
+ */
+.page__main.tribunal {
+  color: var(--color-text);
+}
+
+.page__case-name {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+}
+
+.section {
+  margin-bottom: var(--space-6);
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.section h3 {
+  margin-top: var(--space-4);
+}
+
+.section__lead-in {
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.considerations {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.considerations li {
+  margin-bottom: var(--space-1);
+}
+
+.participant-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.participant {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-surface);
+}
+
+.participant h3 {
+  margin: 0 0 var(--space-1);
+  font-size: 1.0625rem;
+}
+
+.participant__descriptor {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.section--action {
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.start-tribunal__notice {
+  max-width: 44rem;
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-muted);
+}
+
+/* Keep the notice from empty-collapsing so the button never appears to jump. */
+.start-tribunal__notice:empty {
+  margin: 0;
+}
+
+@media (max-width: 30rem) {
+  .page {
+    padding: var(--space-5) var(--space-3);
+  }
+
+  .page__case-name {
+    font-size: 1.125rem;
+  }
+
+  .section--action button {
+    width: 100%;
+  }
+}
