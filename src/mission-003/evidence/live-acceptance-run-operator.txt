@@ -1,0 +1,98 @@
+Mission 003 — Live Acceptance Test (performed by the operator)
+================================================================
+
+This is the one real, paid, seven-call Tribunal run the Founder reserved
+for the operator (FOUNDER_MISSION_003.md, "Live Acceptance Test"). It was
+performed after all automated validation and independent QA had already
+passed with zero remaining findings. No credential value appears below or
+anywhere else in this repository.
+
+Setup (exactly as documented in the project README's "Running it"
+section):
+  Terminal 1: ANTHROPIC_API_KEY=<redacted> node src/server/anthropicProxy.mjs
+  Terminal 2 (no credential in this process's environment):
+              npm run build && npm run preview
+  Browser:    http://localhost:4173, "Start Tribunal" clicked once.
+
+Proxy process log, verbatim (no key, no prompt body — method/path/status
+only, exactly as designed):
+
+    The Tribunal LLM proxy is listening on http://127.0.0.1:8787/api/llm/complete
+    ANTHROPIC_API_KEY present: true
+    Model: claude-haiku-4-5-20251001; provider: https://api.anthropic.com
+    POST /api/llm/complete -> 400 invalid_request   (operator's own pre-flight curl probe, unrelated to the run)
+    OPTIONS /api/llm/complete -> 204
+    POST /api/llm/complete -> 200
+    POST /api/llm/complete -> 200
+    POST /api/llm/complete -> 200
+    POST /api/llm/complete -> 200
+    POST /api/llm/complete -> 200
+    POST /api/llm/complete -> 200
+    POST /api/llm/complete -> 200
+
+Result: exactly 7 successful calls (200), matching the required 4
+representatives + 3 judges exactly. A first attempt (same procedure, a
+different credential) correctly failed closed with "HTTP 401: invalid
+x-api-key" surfaced honestly through the existing error state, with zero
+key material in any log — that credential was replaced by the Founder and
+this run is the one that succeeded.
+
+Browser-side network requests (captured via the browser's own network
+panel, tracked from before the click): all 6 captured entries (a 7th was
+still in flight when captured) went to http://localhost:8787/api/llm/complete
+only. Zero requests from the browser to api.anthropic.com or any other
+host — the browser only ever talks to the local proxy.
+
+Wall-clock: the run completed between two polling checks at +15s (4 of 7
+calls already done) and +30s (all 7 done) after the click — so roughly
+20-30 seconds end to end, consistent with the team's 20-60s estimate for
+seven sequential claude-haiku-4-5-20251001 calls dominated by provider
+latency. (This is bounded by operator polling granularity, not precise
+instrumentation.)
+
+Acceptance checklist (FOUNDER_MISSION_003.md, "Live Acceptance Test"):
+
+1. All four representatives produced real, non-placeholder arguments.
+   CONFIRMED — substantive, distinct prose from Jon Snow, Tyrion
+   Lannister, Daenerys Targaryen and Grey Worm; no "[deterministic test
+   client]" or "Placeholder statement" text anywhere.
+2. Transcript order is correct.
+   CONFIRMED — Jon Snow, then Tyrion Lannister, then Daenerys Targaryen,
+   then Grey Worm, exactly as specified.
+3. Later representatives received prior transcript context.
+   CONFIRMED by content, not just by code path: Tyrion explicitly answers
+   Jon's account ("Jon is correct... But here is where I must trouble his
+   account..."); Daenerys explicitly answers Tyrion ("Tyrion suggests
+   Jon could have..."); Grey Worm explicitly answers both Daenerys and
+   Tyrion by name. This could not happen without real context propagation.
+4. All three judges ran.
+   CONFIRMED — Aharon Barak model, Menachem Elon model, Meir Shamgar
+   model, all three present.
+5. Judges produced separate opinions.
+   CONFIRMED — three independently reasoned opinions, each from a
+   different jurisprudential tradition (rights/proportionality test;
+   tradition and institutional restraint; institutional/fact-focused),
+   reaching the same conclusion by different routes rather than an
+   identical or templated answer.
+6. Valid verdict parsing succeeded.
+   CONFIRMED — all three rendered as "Verdict: Not justified" in the UI
+   (normalized from each judge's own "VERDICT: NOT_JUSTIFIED" /
+   "**NOT_JUSTIFIED.**" line), no parsing error, no InvalidVerdictError.
+7. No combined verdict appeared.
+   CONFIRMED — the UI states explicitly: "Each judge reasoned
+   independently. These opinions are reported separately and are not
+   combined into a single verdict." Three separate verdict lines, no
+   majority/aggregate result anywhere in the DOM or the underlying
+   TribunalResult.
+8. The application did not expose the provider secret.
+   CONFIRMED — proxy log contains no key; browser network requests never
+   went to api.anthropic.com or carried any Authorization/x-api-key
+   header (the browser only calls the local proxy, which is the only
+   process that ever attaches that header); the running proxy process's
+   own stdout printed only the boolean "present: true".
+9. No fake-client fingerprint/content appears in the real run.
+   CONFIRMED — no "[deterministic test client]", no "Placeholder
+   statement N", no "Context fingerprint: <hash>" (all present in the
+   fake client's fixed output shape and absent here).
+
+Result: ALL NINE CRITERIA MET. Mission 003 Live Acceptance Test: PASS.

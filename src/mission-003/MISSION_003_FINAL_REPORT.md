@@ -471,13 +471,41 @@ abstraction; and the proxy contains no tribunal orchestration.
 
 ## 12. Real end-to-end Tribunal run result
 
-**PENDING — this is the operator's run, and QA did not perform it.**
+**DONE — PASS.** Performed by the operator against the real Anthropic API,
+after this report's automated validation and independent QA had both
+already passed. Full record: `src/mission-003/evidence/live-acceptance-run-operator.txt`.
 
-`FOUNDER_MISSION_003.md` reserves the one live, paid, seven-call run for the
-operator, after automated validation and independent QA pass. Both have now
-passed. **No token has been spent by any agent on this mission.**
+Exactly **7 real provider calls, all HTTP 200** (confirmed both in the
+proxy's own process log and in the browser's network panel). A first
+attempt with a different credential correctly failed closed — `HTTP 401:
+invalid x-api-key`, surfaced honestly through the existing error state,
+zero key material logged — before the Founder supplied a working
+credential and the run above succeeded. All nine of the Founder's
+Live Acceptance Test criteria were verified and met:
 
-**What was validated in its place.** The closest honest substitute: the complete
+- All four representatives produced real, substantive, non-placeholder
+  arguments (no fake-client fingerprint anywhere).
+- Correct speaking order: Jon Snow, Tyrion Lannister, Daenerys Targaryen,
+  Grey Worm.
+- Real context propagation, confirmed by content: Tyrion explicitly
+  answers Jon's account, Daenerys explicitly answers Tyrion, Grey Worm
+  explicitly answers both by name — not merely plumbed, demonstrably used.
+- All three judges ran and produced three separately reasoned opinions
+  (rights/proportionality; tradition and institutional restraint;
+  institutional/fact-focused), reaching their conclusions independently.
+- Valid verdict parsing succeeded for all three (no `InvalidVerdictError`).
+- No combined verdict — the UI states so explicitly, and the result
+  object carries three separate opinions only.
+- The provider secret was never exposed: the browser's network panel
+  shows every request going to `localhost:8787` only, never to
+  `api.anthropic.com`; the proxy's own log contains only method/path/
+  status, never the key.
+
+**No token was spent by any automated agent** — only by the operator's one
+live run, exactly as the Founder specified.
+
+**What the automated team validated in its place, before this run.** The
+closest honest substitute available to them, without a credential: the complete
 seven-call tribunal driven through the **real** engine, the **real** adapter and
 the **real** proxy — spawned as an actual child process on an actual loopback
 socket — with only Anthropic itself replaced, via the proxy's own
@@ -556,12 +584,13 @@ seven-call run against the local stub. That number measures the engine, the
 adapter, the proxy and the HTTP between them, and **nothing else** — it contains
 no model latency and must not be read as a run time.
 
-**Real-run estimate — an estimate, not a measurement.** Seven sequential
-`claude-haiku-4-5` calls, each producing a concise statement or a verdict line
-plus reasoning within a 1024-token cap, would plausibly take **roughly 20–60
-seconds** end to end, dominated entirely by provider latency. Nobody has run it.
-The operator's live run in §12 is what will produce a real figure, and this
-report should be updated with it.
+**Real-run measurement.** The operator's live run (§12) completed all 7 real
+`claude-haiku-4-5-20251001` calls in approximately **20-30 seconds**
+end to end (bounded by the operator's own polling checkpoints at +15s, when
+4 of 7 calls had already succeeded, and +30s, when all 7 had — not precise
+instrumentation, but a real measurement rather than an estimate). This falls
+within the pre-run estimate of 20-60 seconds, dominated by provider latency
+as expected.
 
 ## 14. Confirmation: no secrets exposed or committed
 
@@ -657,6 +686,53 @@ mission that closes the Founder's Definition of Done is:
 
 Give it a write policy that includes the repository root, or it will hit exactly
 the wall this mission did.
+
+---
+
+## Operator update (post-mission)
+
+Everything this report and §15/§16 above flagged as an operator action has
+now been done, and Mission 003 is **validated DONE**:
+
+1. **Root artifacts applied** — `.env.example` created, `.gitignore` now
+   covers `.env`/`.env.*` (with `!.env.example` kept last), and the README
+   configuration section plus both stale-claim corrections were applied,
+   via the team's own `apply-root-artifacts.mjs` script (run with `--check`
+   first to confirm, then for real). The optional `npm run proxy` script and
+   Vite snippet were deliberately **not** applied — genuinely optional, and
+   the Founder's own preference against unnecessary changes argues for
+   leaving them out.
+2. **A real bug found in independent re-verification, fixed.** Running the
+   suite on Windows (the team's own validation ran inside a Linux
+   container) surfaced 2 failing self-check assertions in
+   `secretBoundary.test.ts` and `qa.keyMaterial.test.ts`: `path.relative()`
+   returns backslash separators on Windows, but both files hardcoded
+   forward-slash path assertions. The actual security scan (forbidden-token
+   content matching) was unaffected — only the path-string canaries needed
+   normalizing. Fixed in both files; full suite now 13/13 files, 203/203
+   tests, on Windows.
+3. **The live acceptance run is done — PASS.** §12 above has the full
+   result: exactly 7 real Anthropic calls, all 200, ~20-30s wall clock, all
+   nine Founder criteria met, zero secret exposure. Full record:
+   `src/mission-003/evidence/live-acceptance-run-operator.txt`.
+4. **This report and the root reports were left under `src/mission-003/`**
+   rather than moved to the repository root, and the evidence files were
+   left there rather than moved to `.agent/evidence/` — a deliberate
+   operator choice to keep this cohesive audit trail together as
+   supplementary documentation, rather than fragmenting it for a
+   non-blocking cosmetic preference. `.agent/` is also git-ignored, so
+   moving evidence there would have removed it from version control.
+5. **The stale `task_graph.json` was deliberately left in place**, not
+   deleted — it is harmless under the new mission-scoped naming, and
+   deleting historical evidence conflicts with the Founder's own "do not
+   destroy unrelated durable state" instruction for the orchestrator fix.
+6. **The orchestrator fix is confirmed at source level**, not just by
+   evidenced behaviour: root cause, exact diff, and 3 new regression tests
+   are recorded in `AutonomousDevTeam/CHANGELOG.md`, and the fix was proven
+   live in this mission's own run (`task_graph-mission-003.json` created
+   fresh, no reuse of Missions 001/002's graph).
+
+**Mission 003: VALIDATED DONE.**
 
 **Explicitly not recommended for Mission 004:** streaming, retry, a second
 provider, provider-selection UI, persistence, deployment, or any redesign of the
