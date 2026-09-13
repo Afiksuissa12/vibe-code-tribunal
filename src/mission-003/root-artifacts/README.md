@@ -18,7 +18,7 @@ scans everything else.
 | --- | --- | --- |
 | `env.example.txt` | `.env.example` (repo root) | Create the file with this content. **Names only — never fill in a value and commit it.** |
 | `gitignore.additions.txt` | `.gitignore` (repo root) | Append these lines. See the security note below — this one matters. |
-| `readme-configuration.md` | `README.md` (repo root) | Add as a configuration section. |
+| `readme-configuration.md` | `README.md` (repo root) | Add as a configuration section **and** apply the two corrections at the end of that file — Mission 003 falsified two existing README claims. |
 | `package.json.scripts.txt` | `package.json` `scripts` | Optional convenience only. |
 | `vite.config.ts.snippet.txt` | `vite.config.ts` | Optional convenience only. The implementation works correctly without it. |
 
