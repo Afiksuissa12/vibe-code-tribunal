@@ -1,0 +1,16 @@
+# Append these lines to the root .gitignore.
+#
+# WHY THIS MATTERS — this is the security-relevant one.
+#
+# The root .gitignore already ignores `*.local`, so `.env.local` is covered.
+# A plain `.env` is NOT covered by anything currently in it. `.env` is the
+# conventional place a developer puts a real API key, and today `git add .`
+# would stage it. That is the gap these lines close.
+#
+# The negation must come last, so the committed `.env.example` (variable names
+# only) stays tracked while every real variant is ignored.
+
+# Local environment files — may contain a real ANTHROPIC_API_KEY
+.env
+.env.*
+!.env.example

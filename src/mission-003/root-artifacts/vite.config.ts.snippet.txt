@@ -1,0 +1,50 @@
+Optional convenience — a `server.proxy` entry for the root vite.config.ts.
+
+WHAT IT DOES
+
+Forwards /api/llm from the Vite dev server to the proxy, so in dev the browser
+makes a same-origin request and CORS never comes into it.
+
+WHAT IT IS NOT
+
+It is not required. The proxy answers cross-origin requests from the Vite dev
+(:5173) and preview (:4173) origins on both localhost and 127.0.0.1, and
+handles OPTIONS preflight, so the app works correctly with this snippet absent.
+It also only affects `npm run dev` — `vite preview` does not read `server.proxy`
+— so it cannot be the thing the implementation relies on.
+
+THE SNIPPET
+
+    import react from '@vitejs/plugin-react'
+    import { defineConfig } from 'vitest/config'
+
+    // https://vite.dev/config/
+    export default defineConfig({
+      plugins: [react()],
+      server: {
+        proxy: {
+          // Convenience only: lets the browser call /api/llm/complete on the
+          // dev server's own origin. The proxy process must still be running.
+          '/api/llm': {
+            target: 'http://127.0.0.1:8787',
+            changeOrigin: false,
+          },
+        },
+      },
+      test: {
+        globals: true,
+        environment: 'jsdom',
+        setupFiles: ['./src/setupTests.ts'],
+        css: true,
+      },
+    })
+
+IF YOU APPLY IT
+
+The browser adapter must then be pointed at the dev server's own origin rather
+than at http://localhost:8787 — set VITE_TRIBUNAL_PROXY_URL to an empty value
+or to the page origin, per whatever the adapter documents. Applying the snippet
+without also doing that changes nothing: the adapter would still call the proxy
+directly, which works.
+
+If TRIBUNAL_PROXY_PORT is changed from the default, change 8787 here to match.
