@@ -426,6 +426,7 @@ src/
   components/   the screen, section by section
   server/       anthropicProxy.mjs — the only code that sees the key
   mission-003/  preserved validation evidence, QA reports and the e2e harness
+  mission-004/  the final repository/code review notes
   App.tsx       composes the screen; receives its LlmClient by injection
   main.tsx      mounts it and picks the client for the build
 ```

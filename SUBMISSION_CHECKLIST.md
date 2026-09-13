@@ -5,19 +5,20 @@ where. A box is ticked only if the check was run and passed. Anything not yet
 true is marked **NOT YET** with what remains.
 
 - **Checked on:** 2026-09-13
-- **Checked from:** the `task/mission-004-AUTO-SUBMISSION-KIT` worktree, at
-  commit `d4190b5` plus this task's own two documents
+- **Checked from:** originally the `task/mission-004-AUTO-SUBMISSION-KIT`
+  worktree at commit `d4190b5`; **re-checked on the integrated tree at commit
+  `6492bf9`** by `mission-004-AUTO-QA-FINAL`
 - **Environment:** Node v22.14.0, npm 10.9.2, Linux
 - **Tokens spent:** none. No live provider call was made and no real API key
-  was ever set during these checks.
+  was ever set during these checks, in either pass.
 
-> **Scope note, read this first.** Mission 004 is split across three task
-> branches that have not been merged yet. This task (`AUTO-SUBMISSION-KIT`)
-> owns `DEMO_WALKTHROUGH.md` and `SUBMISSION_CHECKLIST.md`. `AUTO-DOCS-CORE`
-> owns `README.md` and `ARCHITECTURE.md`; `AUTO-CODE-REVIEW` owns
-> `src/mission-004/CODE_REVIEW_NOTES.md`. Several boxes below therefore read
-> **NOT YET** purely because the work sits on a branch that has not landed on
-> the integration branch. Re-run this checklist after the integration merge.
+> **Scope note, read this first.** This checklist was first written while
+> Mission 004 was still split across three unmerged task branches, so several
+> boxes read **NOT YET** purely for that reason. **All three branches have
+> since landed.** Independent QA re-ran the checklist against the integrated
+> tree at `6492bf9` and updated every affected item below; each update is
+> marked *(re-checked at `6492bf9`)* and is recorded as a finding in
+> `MISSION_004_FINAL_REPORT.md`. No item is now blocked on a branch.
 
 ---
 
@@ -26,8 +27,9 @@ true is marked **NOT YET** with what remains.
 - [x] **Application code is complete and behaves as specified.** Four
       representatives, three judges, sequential turns with transcript context,
       strict verdict validation, honest error handling, real provider behind a
-      server-side proxy. 80 files tracked; no generated output tracked
-      (`dist/` and `node_modules/` are gitignored and absent from
+      server-side proxy. 84 files tracked *(re-checked at `6492bf9`; was 80
+      before the four Mission 004 documents landed)*; no generated output
+      tracked (`dist/` and `node_modules/` are gitignored and absent from
       `git ls-files`).
 - [x] **Canonical content matches the brief.** Verified against `src/data/`
       directly: `The Tribunal` / `The Realm v. Jon Snow`; Jon Snow and Tyrion
@@ -44,31 +46,37 @@ true is marked **NOT YET** with what remains.
 
 ## 2. README complete
 
-- [ ] **NOT YET.** `README.md` is owned by `mission-004-AUTO-DOCS-CORE` and its
-      final version had not been committed when this was checked — that branch
-      was still at `d4190b5`, carrying the Mission-002-era README.
-- **What remains:** `AUTO-DOCS-CORE` must land the finalized README, and it
-  must correct the claims `AUTO-CODE-REVIEW` verified as false or stale in the
-  current text. Two of those directly affect a reader following the setup
-  instructions:
-  - it offers an `npm run proxy` script and a Vite `server.proxy` entry as
-    available conveniences — **neither exists** (`package.json` scripts are
-    exactly `dev`, `build`, `preview`, `lint`, `test`, `typecheck`, and
-    `vite.config.ts` has no `server` key). Anyone following it hits
-    `npm error Missing script: "proxy"`.
-  - it says the current `.gitignore` does not cover a plain `.env`. It does —
-    `.gitignore` lines 32–35 cover `.env`, `.env.*` and `!.env.example`.
-  - The full list of nine is in `src/mission-004/CODE_REVIEW_NOTES.md`,
-    section (f). Both points above were re-verified independently for this
-    checklist.
+- [x] **Done** *(re-checked at `6492bf9`)*. The finalized `README.md` landed.
+      Independent QA verified it against `FOUNDER_MISSION_004.md`'s list and
+      found every required element present: overview and central question,
+      the academic multi-agent concept, the simple flow diagram, the verbatim
+      principle *Code orchestrates. The LLM decides.*, the
+      deterministic-vs-LLM split, the stack actually used, exact setup
+      commands, environment variable **names only**, the `ANTHROPIC_API_KEY`
+      vs `CLAUDE_CODE_OAUTH_TOKEN` distinction, a testing summary, the
+      server-side-key security explanation, and an honest limitations section.
+- [x] **All nine stale claims from `CODE_REVIEW_NOTES.md` section (f) are
+      closed.** The two that affected a reader following the setup
+      instructions were re-verified specifically:
+  - the README no longer offers an `npm run proxy` script or a Vite
+    `server.proxy` entry — it now states explicitly that neither exists and
+    gives the `node src/server/anthropicProxy.mjs` form. Confirmed against
+    `package.json` (scripts are exactly `dev`, `build`, `preview`, `lint`,
+    `test`, `typecheck`) and `vite.config.ts` (no `server` key).
+  - the `.gitignore` claim is gone; `.gitignore` lines 32–35 do cover `.env`,
+    `.env.*` and `!.env.example`, as the README now says.
 
 ## 3. Architecture document
 
-- [ ] **NOT YET.** `ARCHITECTURE.md` does not exist at the repository root on
-      any branch yet. It is owned by `mission-004-AUTO-DOCS-CORE`.
-- **What remains:** that task must create it. Note that `DEMO_WALKTHROUGH.md`
-  beat 10 tells the presenter to open it — if it does not ship, that beat must
-  fall back to the README's architecture section.
+- [x] **Done** *(re-checked at `6492bf9`)*. `ARCHITECTURE.md` exists at the
+      repository root and covers all nine topics
+      `FOUNDER_MISSION_004.md` requires: core modules, the Tribunal Engine,
+      the `LlmClient` abstraction, the fake client, the real Anthropic client,
+      the local proxy, transcript flow, judge execution and the security
+      boundary. Its proxy line accounting (666 total / 381 code / 179 comment
+      / 106 blank) was reproduced independently and is exact.
+- [x] **`DEMO_WALKTHROUGH.md` beat 10 needs no fallback** — it tells the
+      presenter to open `ARCHITECTURE.md`, and the file is there.
 
 ## 4. Setup instructions verified
 
@@ -177,10 +185,16 @@ true is marked **NOT YET** with what remains.
 - [x] **`.env` is gitignored** — `.gitignore` lines 32–35.
 - [x] **The production bundle is clean.** Grepped `dist/` after a real build:
       no API key, no `api.anthropic.com`, no `x-api-key` header, and no fake
-      client (the compile-time `import.meta.env.DEV` branch drops it). The only
-      provider-related strings are the local path `/api/llm/complete` and a
-      human-readable error hint naming the credential variable and the proxy
-      start command — no secret value, by construction.
+      client (the compile-time `import.meta.env.DEV` branch drops it).
+      *(Re-checked at `6492bf9` with a clean `npm run build`, and this item is
+      **stricter** than first written: the counts are `ANTHROPIC_API_KEY` 0,
+      `api.anthropic.com` 0, `x-api-key` 0, `sk-ant-` 0,
+      `CLAUDE_CODE_OAUTH_TOKEN` 0, `deterministic test client` 0. The **only**
+      provider-related string in the bundle is the local path
+      `/api/llm/complete`. An earlier version of this line also credited the
+      bundle with a human-readable error hint naming the credential variable —
+      that was wrong: the hint is emitted by the proxy server-side and travels
+      in the HTTP response body at run time, and is not compiled in.)*
 - [x] **Browser code cannot reach the provider directly.**
       `src/llm/anthropicClient.ts` holds no key, no provider hostname and no
       auth header; it POSTs only to the local proxy.
@@ -193,17 +207,17 @@ true is marked **NOT YET** with what remains.
 ## 11. Repository clean
 
 - [x] **Working tree clean.** No untracked or modified files beyond this
-      task's own two documents.
+      task's own two documents. *(Re-checked at `6492bf9` on the integrated
+      tree: `git status --porcelain` is empty.)*
 - [x] **No generated or temporary artifacts tracked.** No `dist/`, no
       `node_modules`, no debug output, no `.env`.
 - [x] **Mission 003's audit trail is intact.** `src/mission-003/` was not
       modified, moved or deleted.
-- [ ] **NOT YET: the Mission 004 branches are not merged.** As checked,
-      `task/mission-004-AUTO-CODE-REVIEW` carries its notes and two comment
-      fixes, `task/mission-004-AUTO-SUBMISSION-KIT` carries these two
-      documents, and `task/mission-004-AUTO-DOCS-CORE` has not committed. The
-      submitted repository must be the integrated result, not any single
-      branch.
+- [x] **The Mission 004 branches are merged** *(re-checked at `6492bf9`)*.
+      `AUTO-CODE-REVIEW`'s notes and two comment fixes, `AUTO-DOCS-CORE`'s
+      `README.md` and `ARCHITECTURE.md`, and `AUTO-SUBMISSION-KIT`'s
+      `DEMO_WALKTHROUGH.md` and `SUBMISSION_CHECKLIST.md` are all present in
+      one integrated tree. That integrated tree is what must be submitted.
 - **Local environment artifact, not a repository defect:** this worktree's git
   pointer files hold absolute Windows paths, and the working-tree files are
   CRLF while the committed blobs are LF — so bare `git` commands need an
@@ -213,15 +227,18 @@ true is marked **NOT YET** with what remains.
 
 ## 12. Root files outside this task's write policy
 
-- [ ] **NOT YET — one decision is open and needs a human or the integrator.**
-      `package.json` either needs `"proxy": "node src/server/anthropicProxy.mjs"`
-      added to `scripts`, **or** the final README must stop offering
-      `npm run proxy`. Right now the committed README documents a command that
-      does not exist. `DEMO_WALKTHROUGH.md` avoids it entirely and uses the
-      `node` form, which works today. `AUTO-CODE-REVIEW` recommends adding the
-      script; either resolution closes the item, but one of them must happen.
-- No other root file needs a change. `tsconfig*.json`, `eslint.config.js`,
-  `index.html` and `vite.config.ts` are correct as they stand.
+- [x] **Resolved with no root-file change needed** *(re-checked at
+      `6492bf9`)*. The open decision was whether `package.json` should gain a
+      `"proxy"` script or the README should stop offering `npm run proxy`. The
+      finalized README took the second route: it states explicitly that no
+      `npm run proxy` script and no Vite `server.proxy` entry exist, and
+      documents the `node src/server/anthropicProxy.mjs` form that
+      `DEMO_WALKTHROUGH.md` already used. Every documented command now
+      matches the repository.
+- **No root file outside the documentation write policy needs any change.**
+  `package.json`, `vite.config.ts`, `tsconfig*.json`, `eslint.config.js`,
+  `index.html` and `package-lock.json` are all correct as they stand, and
+  independent QA re-confirmed this at `6492bf9`.
 
 ---
 
