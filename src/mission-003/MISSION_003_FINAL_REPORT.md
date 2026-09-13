@@ -245,13 +245,16 @@ which is recorded as a limitation in §15.
 6. **Outgoing bodies are redacted as a last line of defence**, in case a
    provider ever echoed a key back.
 
-**⚠️ OPERATOR ACTION — the root `.gitignore` does not cover a plain `.env`.**
-It covers `*.local`, so `.env.local` is ignored. `.env` is not. A developer
-following the ordinary convention could have a real key staged by `git add .`
-with nothing to stop them. This is outside this team's write policy and **could
-not be fixed here**. The intended lines are staged verbatim at
-`src/mission-003/root-artifacts/gitignore.additions.txt`. **Apply them before
-anyone writes a real key to disk.**
+**✅ RESOLVED IN INTEGRATION — the root `.gitignore` now covers a plain `.env`.**
+It previously covered only `*.local`, so `.env.local` was ignored and `.env` was
+not: a developer following the ordinary convention could have had a real key
+staged by `git add .` with nothing to stop them. The lines staged at
+`src/mission-003/root-artifacts/gitignore.additions.txt` have now been applied to
+the root `.gitignore` — `.env` and `.env.*` are ignored, and the trailing
+`!.env.example` keeps the committed, names-only example tracked. Verified two
+ways: `git check-ignore -v` reports the matching rule for `.env`, `.env.local`
+and `.env.production` and no match for `.env.example`; and writing a synthetic
+key to `.env` and running `git add -A` left it unstaged.
 
 Two mitigating facts, both established by experiment rather than asserted:
 
@@ -275,7 +278,7 @@ Two mitigating facts, both established by experiment rather than asserted:
 | `src/llm/proxyContract.ts` | The browser-safe shared contract |
 | `src/llm/proxyContract.test.ts` | 12 parity tests holding contract and server together |
 | `src/llm/secretBoundary.test.ts` | 7 tests — the standing source scan |
-| `src/mission-003/root-artifacts/**` | Root-file content the team could not write (6 files) |
+| `src/mission-003/root-artifacts/**` | Root-file content the sub-team could not write (6 files). The three required ones have since been applied — see "Changed — integration" below |
 
 **Added — `mission-003-AUTO-CLIENT`**
 
@@ -318,6 +321,18 @@ Two mitigating facts, both established by experiment rather than asserted:
 `src/components/`, `src/App.css`, `src/index.css`, `src/setupTests.ts`.
 `package.json` and `package-lock.json` are untouched — **no dependency was
 added.**
+
+**Changed — integration (repository root)**
+
+Applied with `node src/mission-003/root-artifacts/apply-root-artifacts.mjs`,
+which is idempotent, appends rather than overwrites, and preserves each file's
+CRLF endings. Its `--check` mode exits 0.
+
+| File | Change |
+| --- | --- |
+| `.gitignore` | Appended `.env`, `.env.*`, `!.env.example` (3 rules). The security-relevant one |
+| `.env.example` | **Added.** Variable names only, no values |
+| `README.md` | Configuration section inserted before "Running it locally"; the two claims Mission 003 falsified corrected |
 
 ## 8. Confirmation: `runTribunal()`'s architecture remained intact
 
@@ -414,9 +429,13 @@ Verbatim output: `src/mission-003/evidence/validation.txt`.
 
 ## 11. Independent QA result
 
-**PASS**, with one QA-authored fix applied and re-validated, and four items that
-are outside this team's write policy and require operator action. Ten findings
-in total; the full audit is `src/mission-003/QA_REPORT.md`.
+**PASS**, with one QA-authored fix applied and re-validated during the mission,
+and the three root-file findings — QA-2, QA-3 and QA-4, which were outside the
+sub-teams' `src`-only write policy — **since applied to the repository during
+integration** and verified there. Ten findings in total; the full audit is
+`src/mission-003/QA_REPORT.md`. **No QA finding remains outstanding.** What is
+still open is the operator's paid live run (§12) and the two optional
+conveniences in §15, neither of which is a QA finding.
 
 QA did not write the implementation and re-derived every claim rather than
 trusting either handoff note. Two of QA's own first attempts were wrong and are
@@ -428,9 +447,9 @@ produced a false positive on a legitimate fixture.
 | --- | --- | --- | --- |
 | QA-12 | minor (security) | **Any page on any origin could spend the operator's tokens.** A CORS *simple* request — `POST` with `content-type: text/plain` — is not preflighted, and the proxy inspected no content type. Proved live: `origin: https://evil.example.com` returned **200** and **made a real provider call**. Not exfiltration (the page cannot read the reply), but an unauthenticated way to burn the operator's credit | **FIXED BY QA.** Routed to `mission-003-AUTO-PROXY` first; that task was terminal and did not reply. See below |
 | QA-1 | minor | The secret-boundary guard checks credential *names*, not credential *material*, and skips `src/server/` and `src/mission-003/` — the two places a real key is most likely to be left. Proved: a realistic `sk-ant-…` literal in `src/components/` passed it | **RESOLVED BY QA** with a new QA-owned test, without editing another task's file |
-| QA-2 | **blocking for the operator** | The root `.gitignore` does not cover a plain `.env` | **CANNOT FIX** — outside `src/`. §6, §15 |
-| QA-3 | major | `.env.example` does not exist at the root | **CANNOT FIX** — staged at `root-artifacts/env.example.txt` |
-| QA-4 | major | The root README has no configuration section | **CANNOT FIX** — staged at `root-artifacts/readme-configuration.md` |
+| QA-2 | was blocking (security) | The root `.gitignore` did **not** cover a plain `.env`, so an operator writing a real key there could have staged it with `git add .` | **RESOLVED IN INTEGRATION.** `.env`, `.env.*` and `!.env.example` appended to the root `.gitignore`; verified by `git check-ignore` and by a synthetic-key `git add -A` test that left `.env` unstaged. §6 |
+| QA-3 | major | `.env.example` did not exist at the root | **RESOLVED IN INTEGRATION.** Created at the root from `root-artifacts/env.example.txt`; verified to contain variable names only, with every value empty and no key material |
+| QA-4 | major | The root README had no configuration section, and two of its claims about `createLlmClient()` and "no real LLM provider" had been falsified by this mission | **RESOLVED IN INTEGRATION.** Configuration section inserted from `root-artifacts/readme-configuration.md`, and both stale claims corrected in the same edit |
 | QA-5 | minor | A plain `npm run dev` uses the **fake** client, while the Founder's live-acceptance note says "e.g. `npm run dev` …". Honest (the warning renders) but ambiguous | **DOCUMENTED.** The operator guide makes `npm run build && npm run preview` the primary path |
 | QA-7 | observation | `DEFAULT_PROXY_ORIGIN` uses `localhost` while the proxy binds `127.0.0.1` only | Documented, with the `VITE_TRIBUNAL_PROXY_URL` escape hatch |
 | QA-8 | observation | The credential variable's name is assembled from fragments in the adapter, to satisfy the guard. Sound, but it is not a security mechanism and should not be read as one | Recorded |
@@ -583,32 +602,34 @@ Confirmed, by scanning rather than by assurance. Details and commands:
   test fixture whose own value says it is fake. Across **all** refs, no
   key-shaped value. **No `.env` file has ever been added, on any branch, in any
   commit.** `git fsck` reports no dangling commits, so nothing was amended away
-  either. The working tree is clean and no `.env*` file exists on disk.
+  either. The only `.env*` file on disk is the committed, names-only
+  `.env.example` added during integration; no real `.env` exists.
 - **No credential appears in any report, evidence file or log excerpt** produced
   by this mission. The only key-like strings anywhere are `test-not-a-real-key`,
   `sk-ant-fake-key-for-tests-…` and `sk-ant-...`, each of which says in its own
   value that it is not a credential.
 
-The one open exposure is the `.gitignore` gap in §6 — a *future* risk of
-committing a key, not a key that was committed. It is an operator action.
+The `.gitignore` gap previously reported here as the one open exposure has been
+**closed during integration** (§6): `.env` and `.env.*` are now ignored, while
+the names-only `.env.example` stays tracked. It was in any case a *future* risk
+of committing a key, never a key that was committed. **No open secret exposure
+remains.**
 
 ## 15. Remaining limitations
 
-1. **⚠️ The root `.gitignore` does not cover a plain `.env`.** The single most
-   important item in this report. Outside this team's write policy; staged at
-   `src/mission-003/root-artifacts/gitignore.additions.txt`. Apply it before
-   anyone writes a real key to disk. Mitigated but not removed by the facts that
-   the proxy loads no dotenv file and that a `.env` value provably does not reach
-   the bundle.
-2. **The root-file artifacts are staged, not applied.** `.env.example` does not
-   exist at the root, and the root `README.md` still has no configuration
-   section — both required by the Definition of Done. Their content is written
-   and correct, at `root-artifacts/env.example.txt` and
-   `root-artifacts/readme-configuration.md`. The optional `npm run proxy` script
-   (`root-artifacts/package.json.scripts.txt`) and the optional Vite `server.proxy`
-   entry (`root-artifacts/vite.config.ts.snippet.txt`) are likewise unapplied;
-   the implementation is correct without either. All four are consequences of the
-   team's `src`-only write policy.
+1. **✅ No longer a limitation — the `.gitignore` gap is closed.** The root
+   `.gitignore` now ignores `.env` and `.env.*` while keeping the names-only
+   `.env.example` tracked (§6, §14). This was the single most important item in
+   this report; it was applied and verified during integration.
+2. **✅ The three required root-file artifacts are applied.** `.env.example`
+   exists at the root with names only, and the root `README.md` carries the
+   configuration section and no longer makes the two false claims — the
+   Definition-of-Done items. Applied via
+   `node src/mission-003/root-artifacts/apply-root-artifacts.mjs`, whose
+   `--check` gate now exits 0. **Still unapplied, and still genuinely optional:**
+   the `npm run proxy` script (`root-artifacts/package.json.scripts.txt`) and the
+   Vite `server.proxy` entry (`root-artifacts/vite.config.ts.snippet.txt`). The
+   implementation is correct without either; they are conveniences only.
 3. **This report, the QA report, the operator guide and all evidence live under
    `src/mission-003/`** rather than at the repository root and in
    `.agent/evidence/`, for the same reason. Moving them is an operator action.
@@ -635,17 +656,15 @@ committing a key, not a key that was committed. It is an operator action.
 
 ## 16. Smallest recommended Mission 004
 
-**Mission 004: apply the root files, run the live acceptance test, record the
-result. Nothing else.**
+**Mission 004: run the live acceptance test, record the result. Nothing else.**
 
-The product is finished. What remains is finishing the paperwork the write
-policy prevented, and turning §12 from *pending* into *done*. The smallest
-mission that closes the Founder's Definition of Done is:
+The product is finished and the three required root files are now applied. What
+remains is turning §12 from *pending* into *done*, plus some tidying. The
+smallest mission that closes the Founder's Definition of Done is:
 
-1. **Apply the four staged root artifacts** — the `.gitignore` lines **first**,
-   then `.env.example`, then the README configuration section, then optionally
-   the `npm run proxy` script. Verbatim from `src/mission-003/root-artifacts/`.
-   No judgement required; the content is written and QA has read it.
+1. **✅ Done during integration** — the `.gitignore` lines, `.env.example` and the
+   README configuration section are applied and verified (§6, §11, §15). Only the
+   two optional conveniences remain, and neither is required.
 2. **Move this report and the QA report to the repository root**, and the
    evidence to `.agent/evidence/`.
 3. **Perform the live acceptance run** per `src/mission-003/README.md`, verify

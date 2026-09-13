@@ -28,3 +28,8 @@ dist-ssr
 .agent-inbox/
 .agent-outbox/
 .worktrees/
+
+# Local environment files — may contain a real ANTHROPIC_API_KEY
+.env
+.env.*
+!.env.example
