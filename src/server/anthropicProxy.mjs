@@ -440,6 +440,29 @@ export async function handleRequest(request, config) {
     return fail('method_not_allowed', `${PROXY_COMPLETE_PATH} accepts POST, but the request used ${method}.`)
   }
 
+  // Withholding `access-control-allow-origin` stops a page READING the reply.
+  // It does not stop the request being SENT: a CORS "simple" request — POST
+  // with `content-type: text/plain` — is not preflighted, and nothing here
+  // inspects content-type, so such a request would reach Anthropic and spend
+  // the operator's tokens on behalf of a page that is not the tribunal.
+  // Refusing a present-but-disallowed Origin closes that at the server, which
+  // is the only side that can. Non-browser callers — curl, the token-free
+  // harness, this module's own tests — send no Origin header at all and are
+  // unaffected, and a legitimate extra origin is what TRIBUNAL_ALLOWED_ORIGINS
+  // is for.
+  //
+  // Added by mission-003-AUTO-QA as a disclosed QA fix (finding QA-12); see
+  // src/mission-003/QA_REPORT.md. `invalid_request` is reused deliberately so
+  // that PROXY_ERROR_CODES — and the parity `src/llm/proxyContract.test.ts`
+  // asserts against it — stay exactly as they were.
+  if (typeof headers.origin === 'string' && !config.allowedOrigins.includes(headers.origin)) {
+    return fail(
+      'invalid_request',
+      `requests from the origin ${headers.origin} are not accepted by this proxy. ` +
+        'If that origin is legitimate, add it to TRIBUNAL_ALLOWED_ORIGINS.',
+    )
+  }
+
   let parsedBody
 
   try {

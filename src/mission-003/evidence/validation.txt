@@ -1,0 +1,56 @@
+AUTOMATED VALIDATION — run by mission-003-AUTO-QA
+================================================
+
+Tree under test: task/mission-003-AUTO-QA, fast-forwarded over
+task/mission-003-AUTO-CLIENT (3056632), which sits on
+task/mission-003-AUTO-PROXY (6e9f894), on the mission base 7809cf4,
+plus this task's own QA additions under src/mission-003/ and the one
+disclosed QA fix to src/server/anthropicProxy.mjs (finding QA-12).
+Node v22.14.0, npm 10.9.2.
+
+The four commands below are the project's own, run verbatim.
+----------------------------------------------------------------------
+
+$ npm run lint
+    -> exit code 0
+
+$ npm run typecheck
+    -> exit code 0
+
+$ npm test
+     RUN  v5.0.0 /workspace/.worktrees/mission-003-AUTO-QA
+     Test Files  13 passed (13)
+          Tests  203 passed (203)
+       Start at  06:48:44
+       Duration  42.89s (environment 78%, setup 20%, transform 1%, worker 1%)
+    -> exit code 0
+
+$ npm run build
+    vite v8.3.0 building client environment for production...
+    transforming...
+    ✓ 39 modules transformed.
+    rendering chunks...
+    computing gzip size...
+    dist/index.html                   0.40 kB │ gzip:  0.27 kB
+    dist/assets/index-BRDnka0L.css    3.32 kB │ gzip:  1.04 kB
+    dist/assets/index-CbEEZ_qV.js   238.47 kB │ gzip: 75.30 kB
+    ✓ built in 287ms
+    -> exit code 0
+
+----------------------------------------------------------------------
+NO AUTOMATED TEST CAN SPEND A PROVIDER TOKEN
+
+Asserted rather than assumed. The whole suite was re-run with every
+non-loopback TCP connection blocked at the socket layer (a Node preload
+wrapping net.connect, net.Socket.prototype.connect, tls.connect and
+dns.lookup), which sits BELOW fetch/undici and so cannot be routed around
+by a test that stubs globalThis.fetch:
+
+    $ NODE_OPTIONS='--import block.mjs' npm test
+      Test Files  13 passed (13)
+           Tests  203 passed (203)   <- the entire suite, offline
+
+The blocker was first proved live INSIDE a vitest worker: a probe test
+attempting fetch('https://api.anthropic.com/v1/messages') was refused with
+'EGRESS BLOCKED BY QA' under the preload, and succeeded without it.
+The probe was then removed.

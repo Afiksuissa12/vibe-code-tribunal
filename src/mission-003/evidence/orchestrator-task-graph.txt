@@ -1,0 +1,138 @@
+ORCHESTRATOR TASK-GRAPH EVIDENCE
+================================
+
+Gathered by mission-003-AUTO-QA for sections 1, 2 and 3 of the mission report.
+
+SCOPE AND HONESTY NOTE. The AutonomousDevTeam orchestrator's source code is
+not in this repository — the driver runs against it from outside, and the
+write-policy banner in its own console log names the repository as
+C:\Users\afiks\TheTribunal while the driver itself lives elsewhere. Everything
+below is therefore drawn from the orchestrator's persisted runtime state and
+its own structured driver logs, which are on disk at /workspace/.agent/. That
+is enough to establish, from behaviour, what went wrong and what changed. It is
+NOT enough to attest to the source-level fix. That distinction is preserved
+throughout; nothing here is inferred past what the files actually say.
+
+
+1. THE BUG, AS THE LOGS RECORD IT
+----------------------------------------------------------------------
+
+/workspace/.agent/missions/mission-002/driver_log.jsonl, first two events:
+
+    04:14:43  mission_started            {repo: ..., mission: "Mission 002: ..."}
+    04:14:43  task_graph_reused_from_disk {task_count: 4}
+
+There is no `phase_start {phase: "coordinator"}` event anywhere in Mission
+002's log. The Coordinator never ran. The driver went straight from starting
+the mission to reusing a task graph it found on disk, in the same second.
+
+What it then executed:
+
+    04:14:43  phase_start  mission-001-AUTO-SCAFFOLD   depends_on []
+    04:14:58  child_task_terminal  mission-001-AUTO-SCAFFOLD  COMPLETED
+    04:14:58  phase_start  mission-001-AUTO-DATA
+    04:15:13  child_task_terminal  mission-001-AUTO-DATA      COMPLETED
+    04:15:13  phase_start  mission-001-AUTO-UI
+    04:15:28  child_task_terminal  mission-001-AUTO-UI        COMPLETED
+    04:15:28  phase_start  mission-001-AUTO-QA
+    04:15:43  child_task_terminal  mission-001-AUTO-QA        COMPLETED
+
+Mission 002 ran **Mission 001's four tasks**, by their Mission 001 ids and
+their Mission 001 roles ("Application scaffolding engineer", "First-screen UI
+engineer"), against a Mission 002 requirement about the Tribunal Engine. Each
+terminated COMPLETED in almost exactly fifteen seconds — the signature of work
+that was already merged and had nothing to do.
+
+The file it reused:
+
+    /workspace/.agent/state/task_graph.json
+      mtime  2026-09-12 20:45:54   (written during Mission 001)
+      tasks  mission-001-AUTO-SCAFFOLD, mission-001-AUTO-DATA,
+             mission-001-AUTO-UI, mission-001-AUTO-QA
+
+The filename carries no mission identifier. The observable root cause is
+therefore precise: the driver persisted the decomposition to a single,
+mission-agnostic path, and on a later mission it found that path already
+occupied and reused its contents instead of running the Coordinator for the
+new requirement. The task graph was cached per-repository when it needed to be
+per-mission.
+
+Why Mission 002 nevertheless shipped: the integrator and QA phases are named
+per mission (mission-002-INTEGRATOR, mission-002-QA, -QA-1, -QA-2, and two
+INTEGRATOR-FIX tasks) and so were unaffected. The real Mission 002 work was
+done entirely in those phases, between 04:15:44 and 05:16:27. The bug cost the
+mission its parallel decomposition, not its outcome.
+
+
+2. THE FIX, AS THE STATE AND LOGS RECORD IT
+----------------------------------------------------------------------
+
+/workspace/.agent/state/ now holds two task-graph files:
+
+    task_graph.json                  mtime 2026-09-12 20:45:54   4 tasks, all
+                                     mission-001-*  (untouched since Mission 001)
+    task_graph-mission-003.json      mtime 2026-09-13 05:43:56   3 tasks, all
+                                     mission-003-*
+
+The new filename is mission-scoped: `task_graph-<mission_id>.json`. The old
+unscoped file is still present and still holds Mission 001's decomposition,
+which is exactly what one expects if the fix changed where the graph is
+written rather than rewriting the old one.
+
+/workspace/.agent/missions/mission-003/driver_log.jsonl:
+
+    05:36:19  mission_started
+    05:36:19  phase_start  {phase: "coordinator", task_id: "mission-003-COORD"}
+    05:43:56  task_graph_received {task_count: 3,
+                task_ids: [mission-003-AUTO-PROXY, mission-003-AUTO-CLIENT,
+                           mission-003-AUTO-QA]}
+
+A Coordinator phase ran, for seven and a half minutes, and produced a graph.
+The event is `task_graph_received`, not `task_graph_reused_from_disk`, and the
+latter appears nowhere in Mission 003's log.
+
+WHAT THIS DOES AND DOES NOT ESTABLISH. It establishes the behaviour is fixed:
+Mission 003 decomposed itself and did not touch Mission 001's graph. It does
+not establish the source change, because the orchestrator's code is outside
+this repository and QA never saw a diff of it. Section 2 of the mission report
+is written accordingly and flags the source-level confirmation as needing
+operator input.
+
+
+3. FRESH DECOMPOSITION FOR MISSION 003
+----------------------------------------------------------------------
+
+/workspace/.agent/state/task_graph-mission-003.json, created 2026-09-13
+05:43:56, requirement field beginning "Mission 003: connect The Tribunal ... to
+exactly ONE real LLM provider - Anthropic, via its Messages API":
+
+    mission-003-AUTO-PROXY    depends_on []
+                              role: Server Proxy & Secret Boundary Engineer
+    mission-003-AUTO-CLIENT   depends_on [mission-003-AUTO-PROXY]
+                              role: Real LlmClient Adapter & Application
+                                    Wiring Engineer
+    mission-003-AUTO-QA       depends_on [mission-003-AUTO-PROXY,
+                                          mission-003-AUTO-CLIENT]
+                              role: Independent QA, Security Auditor &
+                                    Mission Reporter
+
+Three tasks, the three ids the Founder asked to see, in a dependency order that
+matches the mission's actual shape. An identical copy sits at
+/workspace/.worktrees/mission-003-COORD/task_graph.json (mtime 05:43:54), which
+is the Coordinator's own worktree — i.e. the Coordinator wrote it and the
+driver received it, rather than the driver finding it lying around.
+
+No Mission 002 decomposition was reused. There is in fact no Mission 002 task
+graph on disk to reuse — the only two graph files are the two listed above —
+which is itself a consequence of the bug: Mission 002 never wrote one, because
+it never ran a Coordinator.
+
+
+4. A RESIDUAL ITEM FOR THE OPERATOR
+----------------------------------------------------------------------
+
+/workspace/.agent/state/task_graph.json — Mission 001's four-task graph at the
+old unscoped path — is still on disk. Under the new mission-scoped naming it
+should never be read again. It is stale state rather than a live hazard, but
+deleting it removes any chance of a future code path finding it. This is
+orchestrator state, outside this repository, so QA could not remove it.
