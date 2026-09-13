@@ -6,8 +6,9 @@ interface JudgesSectionProps {
 }
 
 /**
- * The three judicial agents. Each reasons independently, so no verdict or
- * leaning is shown — none exists until a later mission runs the tribunal.
+ * The three judicial agents, as the panel roster shown before a run. Each
+ * reasons independently, so no verdict or leaning is shown here; the verdicts
+ * appear only after a run, in `JudicialOpinionsSection`.
  */
 export default function JudgesSection({ heading }: JudgesSectionProps) {
   return (
