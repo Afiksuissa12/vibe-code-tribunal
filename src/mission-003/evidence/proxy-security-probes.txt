@@ -1,0 +1,66 @@
+PROXY SECURITY PROBES — run by mission-003-AUTO-QA
+=================================================
+Every probe below drives the REAL proxy as a real child process
+(node src/server/anthropicProxy.mjs) with ANTHROPIC_BASE_URL pointed at a
+local stub. The credential used throughout is the synthetic string
+"test-not-a-real-key". No probe can reach a paid endpoint.
+
+1. BOUND INTERFACE
+   ss -ltn: tcp 127.0.0.1:<port> LISTEN   — loopback only, never 0.0.0.0.
+   A request to this host's own external address 172.29.0.2:<port> was
+   refused with ECONNREFUSED. The process holds a credential and has no
+   authentication, so this matters.
+
+2. CORS ALLOWLIST
+   origin http://localhost:5173     -> 200, allow-origin echoed
+   origin http://127.0.0.1:4173     -> 200, allow-origin echoed
+   origin http://localhost:5174     -> refused (not on the list)
+   origin https://evil.example.com  -> refused
+   no origin header at all          -> 200 (curl, harnesses, non-browsers)
+   TRIBUNAL_ALLOWED_ORIGINS=http://localhost:5174 -> that origin echoed.
+   access-control-allow-credentials: never sent. allow-origin is never "*".
+   vary: origin is sent on every response, matched or not, so a shared
+   cache can never serve one origin's response to another.
+
+3. FINDING QA-12 — BEFORE AND AFTER THE QA FIX
+   Scenario: a page on https://evil.example.com, open in the operator's
+   browser while the proxy runs, sends a CORS "simple" request — POST with
+   content-type: text/plain, which browsers do NOT preflight.
+
+   BEFORE:  proxy status 200
+            access-control-allow-origin: (none)
+            provider calls made: 1   <-- a real token would have been spent
+            The page cannot read the reply. It has still spent the money.
+
+   AFTER:   proxy status 400  invalid_request
+            access-control-allow-origin: (none)
+            provider calls made: 0
+            message: "requests from the origin https://evil.example.com are
+                      not accepted by this proxy. If that origin is
+                      legitimate, add it to TRIBUNAL_ALLOWED_ORIGINS."
+
+   The application/json path was never vulnerable: that content type is
+   preflighted, and the preflight for a disallowed origin returns 204 with
+   no allow-origin, so the browser never sends the real request.
+
+4. UNKNOWN PATHS AND METHODS
+   GET    /                     -> 404 not_found
+   GET    /api/llm/complete     -> 405 method_not_allowed
+   POST   /admin                -> 404 not_found
+   DELETE /api/llm/complete     -> 405 method_not_allowed
+
+5. CREDENTIAL IN RESPONSES AND LOGS
+   The synthetic key appears in no response header and no response body
+   across every case above. The proxy's own stdout over a full seven-call
+   run was ten lines: the bound URL, "ANTHROPIC_API_KEY present: true" (a
+   boolean, never the value, never a prefix, never a hash), the model and
+   provider origin, and one method/path/status line per request. No prompt
+   body, no response body, no fragment of the key.
+
+6. OVERSIZED REQUEST BODY  (see QA-13, observation only)
+   A 2 MB body against the 1 MB limit: the proxy logs "400 invalid_request"
+   and survives — a normal request immediately afterwards returned 200 with
+   real content. The client sees ECONNRESET rather than the 400, because
+   readBody destroys the socket before the response is written. The
+   tribunal's real prompts are about 3 KB, so nothing in this product can
+   reach the limit.

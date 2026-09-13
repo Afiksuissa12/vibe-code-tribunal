@@ -1,0 +1,44 @@
+CLIENT SELECTION — which LlmClient the app actually wires up
+===========================================================
+
+src/main.tsx decides with:
+  isDevPreview = import.meta.env.DEV && import.meta.env.VITE_TRIBUNAL_LLM !== 'real'
+  llmClient    = isDevPreview ? createFakeLlmClient() : createLlmClient()
+
+Verified by starting a real Vite dev server on its own fresh port for each
+case, confirming the response came from THIS worktree, and reading the
+import.meta.env object Vite injects. (A first attempt at this was invalid —
+the port was already held by a dev server from another worktree — which is
+why each case below is served on its own ephemeral port and identified.)
+
+CASE: npm run dev (no VITE_TRIBUNAL_LLM)
+  server port: 42287 (started: yes)
+  served module identity: _jsxFileName = "/workspace/.worktrees/mission-003-AUTO-QA/src/main.tsx"
+  injected import.meta.env: import.meta.env = {"BASE_URL": "/", "DEV": true, "MODE": "development", "PROD": false, "SSR": false, "VITE_POSTHOG_API_KEY": "phc_BgzfxKdgsYMLFTmJqt424ZoyVHvKFfrwttLimzdYTKFK"}
+  -> isDevPreview resolves to: FAKE client + dev-preview notice
+  expected: FAKE client + dev-preview notice
+
+CASE: VITE_TRIBUNAL_LLM=real npm run dev
+  server port: 34373 (started: yes)
+  served module identity: _jsxFileName = "/workspace/.worktrees/mission-003-AUTO-QA/src/main.tsx"
+  injected import.meta.env: import.meta.env = {"BASE_URL": "/", "DEV": true, "MODE": "development", "PROD": false, "SSR": false, "VITE_POSTHOG_API_KEY": "phc_BgzfxKdgsYMLFTmJqt424ZoyVHvKFfrwttLimzdYTKFK", "VITE_TRIBUNAL_LLM": "real"}
+  -> isDevPreview resolves to: REAL proxy-backed client, no notice
+  expected: REAL proxy-backed client, no notice
+
+CASE: npm run build && npm run preview (production)
+  import.meta.env.DEV is false at build time, so isDevPreview folds to false
+  and Rollup drops ./llm/fakeClient entirely. Confirmed by grepping dist/:
+    'deterministic test client'  -> absent
+    'Development preview'        -> absent
+    'Placeholder statement'      -> absent
+    'Placeholder opinion'        -> absent
+    '/api/llm/complete'          -> PRESENT
+    'localhost:8787'             -> PRESENT
+  -> isDevPreview resolves to: REAL proxy-backed client, no notice
+
+ENVIRONMENT NOTE (not a repository defect): this machine happens to export
+an unrelated VITE_POSTHOG_API_KEY, and Vite injects every VITE_-prefixed
+shell variable into the dev-server env object. It does NOT appear in the
+production bundle (verified: 'phc_' has zero hits in dist/), because a
+production build only inlines the VITE_ variables the code actually reads.
+It is still a standing reminder that a VITE_-prefixed variable is public.

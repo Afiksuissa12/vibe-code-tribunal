@@ -1,0 +1,91 @@
+TOKEN-FREE END-TO-END RUN — mission-003-AUTO-QA
+======================================================================
+
+Real proxy:    http://127.0.0.1:40533  (child process: node src/server/anthropicProxy.mjs)
+Stub provider: http://127.0.0.1:34543      (ANTHROPIC_BASE_URL override; no paid endpoint exists)
+Credential:    the synthetic value "test-not-a-real-key" — authenticates nothing
+
+CALL SEQUENCE (as observed by the stub provider)
+----------------------------------------------------------------------
+  1. REPRESENTATIVE  Jon Snow               system prompt  2662 chars  x-api-key forwarded: yes  model: claude-haiku-4-5-20251001
+  2. REPRESENTATIVE  Tyrion Lannister       system prompt  2616 chars  x-api-key forwarded: yes  model: claude-haiku-4-5-20251001
+  3. REPRESENTATIVE  Daenerys Targaryen     system prompt  2853 chars  x-api-key forwarded: yes  model: claude-haiku-4-5-20251001
+  4. REPRESENTATIVE  Grey Worm              system prompt  2881 chars  x-api-key forwarded: yes  model: claude-haiku-4-5-20251001
+  5. JUDGE           Aharon Barak model     system prompt  3256 chars  x-api-key forwarded: yes  model: claude-haiku-4-5-20251001
+  6. JUDGE           Menachem Elon model    system prompt  3207 chars  x-api-key forwarded: yes  model: claude-haiku-4-5-20251001
+  7. JUDGE           Meir Shamgar model     system prompt  3179 chars  x-api-key forwarded: yes  model: claude-haiku-4-5-20251001
+
+TRANSCRIPT (four representatives, in speaking order)
+----------------------------------------------------------------------
+  1. Jon Snow (defense)
+     Stub statement 1: the participant addresses the tribunal in its own words, on the canonical facts and the discussion so far.
+  2. Tyrion Lannister (defense)
+     Stub statement 2: the participant addresses the tribunal in its own words, on the canonical facts and the discussion so far.
+  3. Daenerys Targaryen (prosecution)
+     Stub statement 3: the participant addresses the tribunal in its own words, on the canonical facts and the discussion so far.
+  4. Grey Worm (prosecution)
+     Stub statement 4: the participant addresses the tribunal in its own words, on the canonical facts and the discussion so far.
+
+JUDICIAL OPINIONS (three, independent, un-aggregated)
+----------------------------------------------------------------------
+  1. Aharon Barak model — VERDICT: JUSTIFIED
+     Stub opinion 5: the judge reasons from the transcript to this verdict and states the grounds for it concisely.
+  2. Menachem Elon model — VERDICT: NOT_JUSTIFIED
+     Stub opinion 6: the judge reasons from the transcript to this verdict and states the grounds for it concisely.
+  3. Meir Shamgar model — VERDICT: JUSTIFIED
+     Stub opinion 7: the judge reasons from the transcript to this verdict and states the grounds for it concisely.
+
+COMBINED VERDICT: none. Result keys are exactly judicialOpinions, transcript.
+FAKE-CLIENT FINGERPRINT "[deterministic test client]": absent from all output.
+CONTEXT ACCUMULATION: speaker 1 saw an empty record; speakers 2-4 each saw
+  every prior statement verbatim; all three judges saw the complete transcript.
+MODEL CALLS: 7
+ORCHESTRATION WALL-CLOCK: 44 ms (against the local stub;
+  this measures the engine, adapter, proxy and HTTP only — NOT model latency).
+
+PROXY LOG HYGIENE
+----------------------------------------------------------------------
+  The Tribunal LLM proxy is listening on http://127.0.0.1:40533/api/llm/complete
+  ANTHROPIC_API_KEY present: true
+  Model: claude-haiku-4-5-20251001; provider: http://127.0.0.1:34543
+  POST /api/llm/complete -> 200
+  POST /api/llm/complete -> 200
+  POST /api/llm/complete -> 200
+  POST /api/llm/complete -> 200
+  POST /api/llm/complete -> 200
+  POST /api/llm/complete -> 200
+  POST /api/llm/complete -> 200
+  ... 10 lines total; none contains the credential or any prompt body.
+
+FAILURE PATH — proxy started with no credential
+----------------------------------------------------------------------
+  proxy log:  ANTHROPIC_API_KEY present: false
+  proxy log:  POST /api/llm/complete -> 503 missing_credential
+  UI message: The tribunal stopped: Jon Snow could not be reached. The tribunal’s language-model proxy is running but has no ANTHROPIC_API_KEY set in its own server environment, so no model could be called. The proxy reported: ANTHROPIC_API_KEY is not set in the proxy process. Start the proxy with the key in its own environment, for example: ANTHROPIC_API_KEY=... node src/server/anthropicProxy.mjs
+  provider calls attempted: 0
+
+FAILURE PATH — provider returned HTTP 401
+----------------------------------------------------------------------
+  UI message: The tribunal stopped: Jon Snow could not be reached. The language-model provider rejected the tribunal’s request. The proxy reported: the language model provider returned HTTP 401: invalid x-api-key
+  calls before abort: 1 (the run stopped at the first speaker)
+
+FAILURE PATH — provider returned HTTP 500
+----------------------------------------------------------------------
+  UI message: The tribunal stopped: Jon Snow could not be reached. The language-model provider rejected the tribunal’s request. The proxy reported: the language model provider returned HTTP 500: the stub provider is pretending to be broken
+  calls before abort: 1 (the run stopped at the first speaker)
+
+FAILURE PATH — proxy not running
+----------------------------------------------------------------------
+  UI message: The tribunal stopped: Jon Snow could not be reached. The tribunal’s language-model proxy could not be reached at http://127.0.0.1:36573. Start it in a second terminal with "node src/server/anthropicProxy.mjs", with the provider key set in that terminal’s environment, then try again.
+
+FAILURE PATH — judge replied without a readable verdict line
+----------------------------------------------------------------------
+  error type: InvalidVerdictError
+  UI message: Could not read a judge verdict: no "VERDICT:" line was present Expected a line of the form "VERDICT: JUSTIFIED or NOT_JUSTIFIED". Received: "I find the execution was probably about right, all things considered."
+  calls before abort: 5 (4 representatives + 1 judge)
+  verdicts invented: none. The run produced no result at all.
+
+FAILURE PATH — provider returned 200 with no text block
+----------------------------------------------------------------------
+  UI message: The tribunal stopped: Jon Snow could not be reached. The language-model provider replied with nothing the tribunal could use. The proxy reported: the provider returned a success status but no usable text content.
+
