@@ -1,7 +1,12 @@
 # Configuration — add this section to the root README.md
 
+The HTML comments below are markers read by `apply-root-artifacts.mjs`, so that
+this file stays the single source of truth for the text it applies. They are
+invisible in rendered markdown. Leave them in place.
+
 ---
 
+<!-- apply:section:begin -->
 ## Configuration
 
 The Tribunal talks to one language model provider, Anthropic, through a small
@@ -42,8 +47,20 @@ ANTHROPIC_API_KEY=sk-ant-... node src/server/anthropicProxy.mjs
 ```sh
 # Terminal 2 — the app. Start the key-free process from a shell that does not
 # have ANTHROPIC_API_KEY set at all.
-npm run dev        # or: npm run build && npm run preview
+VITE_TRIBUNAL_LLM=real npm run dev     # or: npm run build && npm run preview
 ```
+
+**Read that second command carefully — a plain `npm run dev` will not reach the
+provider.** In dev the deterministic fake client is the default, so that a
+preview costs no provider tokens. There are exactly two ways to get a real run:
+
+| Command | Client used |
+| --- | --- |
+| `npm run dev` | the **fake** — mechanically generated placeholder text, with a visible dev-preview warning on screen |
+| `VITE_TRIBUNAL_LLM=real npm run dev` | the real one, via the proxy |
+| `npm run build && npm run preview` | the real one — a production build never contains the fake at all |
+
+If you are performing the live acceptance run, use one of the bottom two.
 
 The proxy prints the URL it bound to and whether a credential is present, as a
 boolean:
@@ -97,3 +114,63 @@ The proxy never invents a reply. If the key is missing, the provider rejects the
 call, the network fails, or the provider returns something unusable, it returns
 a specific error code and the UI surfaces the failure through its existing error
 state. It never falls back to the deterministic fake client during a real run.
+<!-- apply:section:end -->
+
+---
+
+## Also required: two existing README claims are now false
+
+Adding the section above is not sufficient on its own. Mission 003 connected a
+real provider, which falsified two statements that were accurate in Mission 002
+and are still in the root `README.md`. A reader of the current README would
+conclude no provider is wired up at all. Both must be corrected in the same
+edit.
+
+**1. In "What this build does and does not do" — replace this paragraph:**
+
+<!-- apply:replace1:old:begin -->
+> **A production build** (`npm run build`) has no model connected.
+> `createLlmClient()` returns a stub that rejects with `LlmNotImplementedError`,
+> so `Start Tribunal` fails honestly — it says that no language model is
+> connected to this build — rather than fabricating a result. The fake client
+> below sits behind a compile-time `import.meta.env.DEV` branch and is not in the
+> production bundle at all.
+<!-- apply:replace1:old:end -->
+
+with:
+
+<!-- apply:replace1:new:begin -->
+> **A production build** (`npm run build`) is connected to a real provider.
+> `createLlmClient()` returns the Anthropic client, which calls the local proxy
+> described under [Configuration](#configuration); the proxy holds the API key in
+> its own process environment and the browser never sees it. If the proxy is not
+> running, or has no credential, `Start Tribunal` fails honestly through the
+> existing error state rather than fabricating a result — it never falls back to
+> the fake. The fake client sits behind a compile-time `import.meta.env.DEV`
+> branch and is not in the production bundle at all.
+<!-- apply:replace1:new:end -->
+
+**2. Replace the "Still not built" paragraph:**
+
+<!-- apply:replace2:old:begin -->
+> Still not built: any real LLM provider. When one arrives it must sit behind a
+> server-side proxy — a provider API key must never be shipped to or read from
+> the browser. There is still no combined or majority verdict; the three opinions
+> stand separately by design.
+<!-- apply:replace2:old:end -->
+
+with:
+
+<!-- apply:replace2:new:begin -->
+> Mission 003 added the real provider, behind a server-side proxy so that the API
+> key is never shipped to or read from the browser. There is still no combined or
+> majority verdict; the three opinions stand separately by design.
+<!-- apply:replace2:new:end -->
+
+
+The `Architecture` section is also mildly stale — `src/llm/client.ts` is
+described as "LlmClient interface, not-implemented stub" and `src/llm/` as "the
+seam for a real model". The stub does still exist (`notImplementedLlmClient`),
+so these are imprecise rather than false, and `src/llm/anthropicClient.ts` and
+`src/server/` are simply missing from the file tree. Worth refreshing, but not
+blocking the way the two claims above are.
