@@ -1,0 +1,25 @@
+Optional convenience — add to the "scripts" object in the root package.json.
+
+Purely a shorthand for the command already documented in the README. Nothing
+depends on it; `node src/server/anthropicProxy.mjs` works exactly the same.
+
+    "proxy": "node src/server/anthropicProxy.mjs"
+
+In context:
+
+    "scripts": {
+      "dev": "vite",
+      "build": "tsc -b && vite build",
+      "preview": "vite preview",
+      "lint": "eslint .",
+      "test": "vitest run",
+      "typecheck": "tsc -b --noEmit",
+      "proxy": "node src/server/anthropicProxy.mjs"
+    }
+
+Then: ANTHROPIC_API_KEY=sk-ant-... npm run proxy
+
+Deliberately NOT added: a script that runs the proxy and Vite together with a
+concurrency helper. That would mean a new dependency for a cosmetic gain, and
+it would put the two processes' output — and the environment holding the key —
+into one terminal. Two terminals is the honest arrangement.
