@@ -14,7 +14,7 @@ import type { JudicialProfile } from './types'
  */
 export const INDEPENDENT_JUDGMENT_RULE = [
   'The three judges must reach their decisions independently.',
-  'Each judge returns JUSTIFIED or NOT JUSTIFIED plus a concise reasoned opinion.',
+  'Each judge returns JUSTIFIED or NOT_JUSTIFIED plus a concise reasoned opinion.',
   'Do NOT create a combined majority verdict in V1.',
 ].join(' ')
 

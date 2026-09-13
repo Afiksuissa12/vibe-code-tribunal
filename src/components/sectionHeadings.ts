@@ -10,3 +10,7 @@
 export const DEFENSE_HEADING = 'Defense representatives'
 export const PROSECUTION_HEADING = 'Prosecution representatives'
 export const JUDICIAL_PANEL_HEADING = 'Independent judicial panel'
+
+/** Headings for the two result sections, which appear only after a run. */
+export const TRANSCRIPT_HEADING = 'Transcript'
+export const JUDICIAL_OPINIONS_HEADING = 'Judicial opinions'

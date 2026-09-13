@@ -1,6 +1,7 @@
 /**
  * The narrow seam through which The Tribunal will one day talk to a language
- * model. Mission 001 establishes the shape only.
+ * model. Mission 001 established the shape; Mission 002 runs the whole
+ * tribunal through it, against the deterministic fake in `./fakeClient`.
  *
  * NOTE FOR A LATER MISSION: a real provider-backed implementation of
  * `LlmClient` arrives in a later mission. It is deliberately absent here —
@@ -35,7 +36,7 @@ export class LlmNotImplementedError extends Error {
 }
 
 export const LLM_NOT_IMPLEMENTED_MESSAGE =
-  'LLM integration is not implemented in Mission 001. Provide a real LlmClient in a later mission.'
+  'No language model is connected to this build, so the tribunal cannot be run. Real provider integration arrives in a later mission.'
 
 /**
  * Placeholder client. It ignores the request and always rejects, so a caller

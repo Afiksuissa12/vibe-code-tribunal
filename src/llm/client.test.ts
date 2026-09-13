@@ -17,10 +17,11 @@ describe('notImplementedLlmClient', () => {
     await expect(result).rejects.toBeInstanceOf(LlmNotImplementedError)
   })
 
-  it('names Mission 001 in the failure so the cause is obvious', async () => {
+  it('says plainly that no model is connected, so the cause is obvious', async () => {
     await expect(
       notImplementedLlmClient.complete({ systemPrompt: 'any system prompt', messages: [] }),
     ).rejects.toThrow(LLM_NOT_IMPLEMENTED_MESSAGE)
+    expect(LLM_NOT_IMPLEMENTED_MESSAGE).toMatch(/no language model is connected/i)
   })
 
   it('is what the default factory hands back', async () => {

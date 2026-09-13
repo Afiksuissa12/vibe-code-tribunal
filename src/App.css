@@ -87,6 +87,71 @@
   margin: 0;
 }
 
+/*
+ * The dev-preview warning and the failure notice both have to be read before
+ * anything below them is trusted, so neither is muted like body copy.
+ */
+.start-tribunal__dev-notice,
+.start-tribunal__error {
+  max-width: 44rem;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-surface);
+}
+
+.start-tribunal__dev-notice {
+  margin: 0 0 var(--space-3);
+}
+
+.start-tribunal__error {
+  margin: var(--space-3) 0 0;
+}
+
+.section--action button[disabled] {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.transcript,
+.opinions {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.transcript__entry,
+.opinion {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-surface);
+}
+
+.transcript__entry h3,
+.opinion h3 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.transcript__side {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.opinion__verdict {
+  margin: var(--space-1) 0 var(--space-2);
+  font-weight: 600;
+}
+
+.transcript__text,
+.opinion__reasoning {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 30rem) {
   .page {
     padding: var(--space-5) var(--space-3);
