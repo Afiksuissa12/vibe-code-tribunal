@@ -15,6 +15,7 @@ export type {
   Side,
   Transcript,
   TranscriptEntry,
+  TribunalResult,
   Verdict,
 } from './types'
 export { VERDICTS } from './types'
@@ -38,4 +39,12 @@ export {
 
 export { INDEPENDENT_JUDGMENT_RULE, JUDICIAL_PROFILES } from './judges'
 
-export { buildJudgePrompt, buildRepresentativePrompt, formatTranscript } from './prompts'
+export {
+  JUDGE_RESPONSE_FORMAT,
+  JUDGE_TURN_CUE,
+  REPRESENTATIVE_TURN_CUE,
+  VERDICT_LABEL,
+  buildJudgePrompt,
+  buildRepresentativePrompt,
+  formatTranscript,
+} from './prompts'

@@ -20,6 +20,35 @@ import { VERDICTS } from './types'
 
 const EMPTY_TRANSCRIPT_NOTE = '(No statements have been made yet.)'
 
+/**
+ * The label a judge must put its verdict behind. The verdict parser keys off
+ * this exact word, so prompt and parser share one constant rather than two
+ * copies that can drift apart.
+ */
+export const VERDICT_LABEL = 'VERDICT'
+
+/**
+ * The reply shape asked of every judge. Deliberately the simplest thing that
+ * can be parsed without a schema library: one labelled line, then prose.
+ */
+export const JUDGE_RESPONSE_FORMAT = [
+  'REPLY FORMAT (exactly this shape, nothing before it)',
+  `${VERDICT_LABEL}: <${VERDICTS.join(' or ')}>`,
+  '<your concise reasoned opinion, in plain prose>',
+].join('\n')
+
+/**
+ * The turn cue sent as the single user message on a representative call.
+ *
+ * It is procedural only — it says that it is their turn, never what to say.
+ */
+export const REPRESENTATIVE_TURN_CUE =
+  'It is your turn to address the tribunal. Give one concise statement now.'
+
+/** The turn cue sent as the single user message on a judge call. */
+export const JUDGE_TURN_CUE =
+  'The representatives have finished. Deliver your verdict and opinion now, in the reply format above.'
+
 function formatCase(caseData: CanonicalCase): string {
   const facts = caseData.facts.map((fact) => `- ${fact}`).join('\n')
   const considerations = caseData.centralQuestion.considerations
@@ -98,5 +127,7 @@ export function buildJudgePrompt(
     'YOUR DECISION',
     'Decide the central question yourself, on the canonical facts and the transcript above.',
     `State exactly one verdict — ${VERDICTS.join(' or ')} — and give a concise reasoned opinion for it.`,
+    '',
+    JUDGE_RESPONSE_FORMAT,
   ].join('\n')
 }

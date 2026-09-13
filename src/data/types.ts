@@ -5,11 +5,18 @@
  * Code orchestrates; the LLM decides.
  */
 
-/** The only two verdicts a judge may return in V1. */
-export type Verdict = 'JUSTIFIED' | 'NOT JUSTIFIED'
+/**
+ * The only two verdicts a judge may return in V1.
+ *
+ * FOUNDER_MISSION_002.md ("LLM Response Safety") fixes the wire tokens as
+ * `JUSTIFIED` and `NOT_JUSTIFIED`, so those are the canonical spellings. The
+ * verdict parser still accepts the spaced/hyphenated forms a model may emit
+ * and normalizes them onto these two values — see `src/tribunal/verdict.ts`.
+ */
+export type Verdict = 'JUSTIFIED' | 'NOT_JUSTIFIED'
 
 /** Runtime list of the allowed verdicts, in the brief's order. */
-export const VERDICTS: readonly Verdict[] = ['JUSTIFIED', 'NOT JUSTIFIED']
+export const VERDICTS: readonly Verdict[] = ['JUSTIFIED', 'NOT_JUSTIFIED']
 
 /**
  * The procedural side a representative argues for.
@@ -76,6 +83,21 @@ export type Transcript = readonly TranscriptEntry[]
 /** A single judge's independent decision. */
 export interface JudgeOpinion {
   readonly judgeId: JudgeId
+  readonly judgeName: string
   readonly verdict: Verdict
   readonly opinion: string
+}
+
+/**
+ * The outcome of one complete tribunal run: what was said, and what each judge
+ * independently concluded.
+ *
+ * There is deliberately NO combined or majority verdict field. V1 reports the
+ * three opinions side by side and leaves them un-aggregated; adding a summary
+ * verdict here would be the application deciding the case rather than the
+ * judges.
+ */
+export interface TribunalResult {
+  readonly transcript: Transcript
+  readonly judicialOpinions: readonly JudgeOpinion[]
 }

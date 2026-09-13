@@ -5,9 +5,13 @@ import {
   CANONICAL_FACTS,
   CASE_NAME,
   CASE_SUMMARY,
+  JUDGE_RESPONSE_FORMAT,
+  JUDGE_TURN_CUE,
   JUDICIAL_PROFILES,
   REPRESENTATIVES,
+  REPRESENTATIVE_TURN_CUE,
   VERDICTS,
+  VERDICT_LABEL,
   buildJudgePrompt,
   buildRepresentativePrompt,
 } from './index'
@@ -85,8 +89,8 @@ describe('judicial profiles', () => {
 })
 
 describe('verdicts', () => {
-  it('offers exactly the two V1 verdicts', () => {
-    expect(VERDICTS).toEqual(['JUSTIFIED', 'NOT JUSTIFIED'])
+  it('offers exactly the two V1 verdicts, in the wire spelling the brief fixes', () => {
+    expect(VERDICTS).toEqual(['JUSTIFIED', 'NOT_JUSTIFIED'])
   })
 })
 
@@ -123,6 +127,20 @@ describe('prompt builders', () => {
       for (const verdict of VERDICTS) {
         expect(prompt).toContain(verdict)
       }
+    }
+  })
+
+  it('tells a judge the exact reply shape the verdict parser expects', () => {
+    for (const judge of JUDICIAL_PROFILES) {
+      expect(buildJudgePrompt(judge, transcript)).toContain(JUDGE_RESPONSE_FORMAT)
+    }
+    expect(JUDGE_RESPONSE_FORMAT).toContain(`${VERDICT_LABEL}:`)
+  })
+
+  it('keeps the turn cues procedural — a prompt to speak, never what to say', () => {
+    for (const cue of [REPRESENTATIVE_TURN_CUE, JUDGE_TURN_CUE]) {
+      expect(cue.trim()).not.toHaveLength(0)
+      expect(cue).not.toMatch(/justified/i)
     }
   })
 
