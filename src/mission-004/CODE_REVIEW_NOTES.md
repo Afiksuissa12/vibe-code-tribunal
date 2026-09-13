@@ -9,6 +9,16 @@ Reviewer scope: review, verification, minimal safe cleanup. No feature work, no
 redesign, no refactor. No live provider call was made and the Anthropic
 credential variable was never set to a real value.
 
+> **Read this before acting on anything below.** This file was written on
+> `task/mission-004-AUTO-CODE-REVIEW`, *before* the documentation tasks landed.
+> Sections (f) and (g) are a work order addressed to those tasks, and their
+> `README.md` line citations refer to the **Mission-002-era README that no longer
+> exists**. Every one of those items has since been closed. The findings are kept
+> verbatim as the audit record of what was true when they were raised; the
+> current status of each is in
+> [Integration addendum](#integration-addendum--status-at-the-merge) at the end of
+> this file. Nothing in (f) or (g) is outstanding work.
+
 > **Notation.** This file lives under `src/`, so it is scanned by
 > `src/llm/secretBoundary.test.ts`, which fails any non-exempt file containing
 > the literal credential-variable name. This file therefore calls it "the
@@ -417,3 +427,117 @@ reports the entire tree as modified unless `-c core.autocrlf=true` is used — w
 it, the tree is clean. Both are local checkout artifacts of a
 Windows-created repository, **not** committed defects, and neither affects the
 application, the tests or the build.
+
+---
+
+## Integration addendum — status at the merge
+
+Added by `mission-004-INTEGRATOR` after `task/mission-004-AUTO-CODE-REVIEW`,
+`task/mission-004-AUTO-DOCS-CORE`, `task/mission-004-AUTO-SUBMISSION-KIT` and
+`task/mission-004-AUTO-QA-FINAL` all landed on `task/mission-004-INTEGRATOR`.
+
+Everything above this heading is the original review, unedited apart from the
+pointer added to the header. This addendum adds no finding and reverses none. It
+exists because sections (f) and (g) were a **work order addressed to branches
+that had not merged yet**, and once they merged the work order became the one
+piece of the repository that still described closed work as open — with line
+citations into a `README.md` that had been replaced wholesale. Re-verified
+against the merged tree, file by file.
+
+### Section (f) — the nine stale README claims: all nine CLOSED
+
+`mission-004-AUTO-DOCS-CORE` replaced `README.md` entirely, so none of the
+original line numbers resolve. Each item re-checked against the merged text:
+
+| # | What (f) reported | Status in the merged tree |
+| --- | --- | --- |
+| 1 | `.gitignore` "covers `.env.local` but not a plain `.env`" | **Closed.** `README.md:234-237` now states no `.env` file is required at all, and that `.env` / `.env.*` are already gitignored with `!.env.example` as the exception. |
+| 2 | offers `npm run proxy` and a Vite `server.proxy` entry | **Closed, the other way.** `README.md:199-203` says explicitly that **neither exists**, lists the six real scripts, and gives the direct `node src/server/anthropicProxy.mjs` command instead. See (g) below. |
+| 3 | points at `src/mission-003/root-artifacts/` as staged and pending | **Closed.** `root-artifacts` appears **zero** times in `README.md`, `ARCHITECTURE.md`, `DEMO_WALKTHROUGH.md` and `SUBMISSION_CHECKLIST.md`. This is the fix (b) recommended: the protected evidence was left untouched and the README stopped citing it. |
+| 4 | "There is no backend, no database and no state-management library" | **Closed.** `README.md:144-147` now reads "no backend *framework*, no database and no state-management library" and names `src/server/anthropicProxy.mjs` as the one server-side component. |
+| 5 | file tree omits `src/llm/anthropicClient.ts`, `proxyContract.ts`, `src/server/`, `src/mission-003/` | **Closed.** The "Repository map" (`README.md:419-433`) is directory-level and lists `llm/`, `server/`, `mission-003/` and `mission-004/`. |
+| 6 | `client.ts` described as "a stub that always rejects" | **Closed.** The per-file description is gone; `client.ts` is not characterised anywhere in the merged README. |
+| 7 | judges return "`JUSTIFIED` or `NOT JUSTIFIED`" (spaced) | **Closed.** Every occurrence is the underscored wire token — `README.md:46, 116, 347`, `ARCHITECTURE.md:90, 100`. The single spaced `NOT JUSTIFIED` at `ARCHITECTURE.md:98` is correct: it is naming an input the normaliser folds. |
+| 8 | "The intended V1 flow is sequential" | **Closed.** The word "intended" no longer appears in `README.md`. |
+| 9 | "Mission 002 adds…", "Mission 003 added…" product framing | **Closed.** The two surviving mission references (`README.md:354, 373`) are test and live-validation provenance, not a narration of the product's growth. |
+
+### Section (g) — root-level files outside the review's write policy: NO CHANGE NEEDED
+
+Both rows of (g) presented a choice. The documentation took the second option in
+each case, which needs no root-file edit:
+
+- **`package.json`** — the recommendation was to *add* a `proxy` script so the
+  documented command would be true. Instead the README stopped documenting it.
+  `package.json` scripts remain exactly `dev`, `build`, `preview`, `lint`,
+  `test`, `typecheck`, and no document offers `npm run proxy`. `mission-004-AUTO-QA-FINAL`
+  reached and recorded the same conclusion independently
+  (`MISSION_004_FINAL_REPORT.md`, "Root-level files still needing a change").
+- **`vite.config.ts`** — the `server.proxy` snippet was declined, as (g) itself
+  recommended. The file still has no `server` key, and `README.md:201-203` says
+  so.
+
+**No root-level file needs an edit. This is why the Integrator changed nothing
+outside `src/`.**
+
+### Section (b) — counts that moved with the merge
+
+The cleanliness walk counted **80 tracked files, 0 untracked**. At the
+integration commit it is **85 tracked, 0 untracked**. The five additions are the
+Mission 004 documents themselves: this file, plus root `ARCHITECTURE.md`,
+`DEMO_WALKTHROUGH.md`, `SUBMISSION_CHECKLIST.md` and `MISSION_004_FINAL_REPORT.md`.
+No generated output became tracked; `dist/` and `node_modules/` are still
+gitignored and absent.
+
+One consequence worth recording, because it constrains anyone adding to this
+directory: `src/mission-004/` is **not** in `EXEMPT_DIRECTORIES`
+(`src/llm/secretBoundary.test.ts:44` — only `server` and `mission-003` are), so
+every file here is scanned on every `npm test`. That is deliberate and is why
+this addendum, like the header above it, writes "the Anthropic credential
+variable" instead of the literal name.
+
+### Validation re-run on the merged tree
+
+The review's own validation (above) ran in the `AUTO-CODE-REVIEW` worktree before
+any documentation landed. Re-run by the Integrator on the fully merged tree, from
+a clean `npm ci`, on Node v22.14.0 / npm 10.9.2. Real output, pasted verbatim.
+
+```
+=== npm run lint ===
+> the-tribunal@0.1.0 lint
+> eslint .
+exit=0
+
+=== npm run typecheck ===
+> the-tribunal@0.1.0 typecheck
+> tsc -b --noEmit
+exit=0
+
+=== npm run test ===
+> the-tribunal@0.1.0 test
+> vitest run
+ RUN  v5.0.0 /workspace/.worktrees/mission-004-INTEGRATOR
+ Test Files  13 passed (13)
+      Tests  203 passed (203)
+   Duration  50.21s
+exit=0
+
+=== npm run build ===
+> the-tribunal@0.1.0 build
+> tsc -b && vite build
+vite v8.3.0 building client environment for production...
+✓ 39 modules transformed.
+dist/index.html                   0.40 kB │ gzip:  0.27 kB
+dist/assets/index-BRDnka0L.css    3.32 kB │ gzip:  1.04 kB
+dist/assets/index-CbEEZ_qV.js   238.47 kB │ gzip: 75.30 kB
+✓ built in 523ms
+exit=0
+```
+
+Same 13 files and 203 tests as the pre-merge run, and — the useful detail — the
+**bundle hashes are byte-identical** to the ones recorded above
+(`index-BRDnka0L.css`, `index-CbEEZ_qV.js`). The merge introduced documentation
+only; not one byte of shipped code changed. Mission 003's live seven-call
+acceptance evidence therefore still applies unchanged.
+
+**No integration defect was found in the merged code.** The only seam was this
+document, and closing it is the whole of the Integrator's change.
