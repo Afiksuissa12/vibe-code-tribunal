@@ -1,15 +1,23 @@
 /**
- * The narrow seam through which The Tribunal will one day talk to a language
- * model. Mission 001 established the shape; Mission 002 runs the whole
- * tribunal through it, against the deterministic fake in `./fakeClient`.
+ * The narrow seam through which The Tribunal talks to a language model.
  *
- * NOTE FOR A LATER MISSION: a real provider-backed implementation of
- * `LlmClient` arrives in a later mission. It is deliberately absent here —
- * there is no network call, no SDK dependency, no API key and no environment
- * handling in this module. When a secret-bearing implementation is added it
- * must sit behind a server-side proxy; provider keys must never be shipped to
- * or read from the browser.
+ * Mission 001 established the shape, Mission 002 ran the whole tribunal
+ * through it against the deterministic fake in `./fakeClient`, and Mission 003
+ * put a real provider behind it. There are now three implementations and the
+ * engine cannot tell them apart:
+ *
+ * - `./anthropicClient` — the real one. It calls a local proxy over HTTP; the
+ *   proxy holds the credential in its own server environment. This module and
+ *   everything it reaches still contain no network call, no SDK, no key and no
+ *   environment handling, and `./secretBoundary.test.ts` keeps it that way.
+ * - `./fakeClient` — deterministic test infrastructure, dev preview only.
+ * - `notImplementedLlmClient`, below — a stub that always fails loudly, kept
+ *   for anything that needs a client which is guaranteed not to run.
+ *
+ * `createLlmClient()` returns the real one: that is what the application uses.
  */
+
+import { createAnthropicProxyClient } from './anthropicClient'
 
 export type ChatRole = 'user' | 'assistant'
 
@@ -36,12 +44,14 @@ export class LlmNotImplementedError extends Error {
 }
 
 export const LLM_NOT_IMPLEMENTED_MESSAGE =
-  'No language model is connected to this build, so the tribunal cannot be run. Real provider integration arrives in a later mission.'
+  'No language model is connected to this build, so the tribunal cannot be run.'
 
 /**
- * Placeholder client. It ignores the request and always rejects, so a caller
- * that wires it up by mistake fails loudly instead of receiving invented
- * tribunal content.
+ * A client that ignores the request and always rejects, so a caller that wires
+ * it up by mistake fails loudly instead of receiving invented tribunal content.
+ *
+ * No longer what `createLlmClient()` returns — a real provider is connected —
+ * but kept as the explicit way to express "deliberately not runnable".
  */
 export const notImplementedLlmClient: LlmClient = {
   async complete() {
@@ -49,7 +59,14 @@ export const notImplementedLlmClient: LlmClient = {
   },
 }
 
-/** The client the application uses until a real provider is wired in. */
+/**
+ * The client the application uses: the real one, talking to the local proxy.
+ *
+ * It is built here rather than imported at every call site so that "what the
+ * application talks to" is a single decision recorded in one place. It fails
+ * honestly when the proxy is not running or has no credential; it never
+ * invents text and never falls back to the fake.
+ */
 export function createLlmClient(): LlmClient {
-  return notImplementedLlmClient
+  return createAnthropicProxyClient()
 }

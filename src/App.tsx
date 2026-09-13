@@ -15,10 +15,10 @@ import './App.css'
 
 interface AppProps {
   /**
-   * The seam the Tribunal Engine runs through. Defaults to the not-implemented
-   * client, so a build with no model connected fails honestly rather than
-   * showing invented content; tests and dev verification inject the
-   * deterministic fake instead.
+   * The seam the Tribunal Engine runs through. Defaults to the real
+   * proxy-backed client, which fails honestly — naming the cause — when the
+   * proxy is unreachable or has no credential, rather than inventing content;
+   * tests and the dev preview inject the deterministic fake instead.
    */
   llmClient?: LlmClient
   isDevPreview?: boolean
