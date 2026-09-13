@@ -331,18 +331,38 @@ describe('guarding against a duplicate run', () => {
 })
 
 /**
- * Honest failure: the production build has no model connected, so pressing the
- * button must say so rather than show an empty or invented tribunal.
+ * Honest failure through the existing error state.
+ *
+ * `<App />` with no injected client uses the real, proxy-backed one, so the
+ * two conditions the operator is most likely to meet — the proxy not running,
+ * and a proxy running without a provider credential — are exercised here by
+ * stubbing the transport, not the client. Neither may produce a transcript, an
+ * opinion or a verdict.
  */
 describe('when the tribunal cannot be run', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  /** The only parts of a `Response` the real client reads. */
+  function stubProxyResponse(status: number, body: unknown) {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: status >= 200 && status < 300,
+      status,
+      text: async () => JSON.stringify(body),
+    } as unknown as Response)
+  }
+
   it('shows a clear error and no fabricated transcript or verdict', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'))
     const { container } = render(<App />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Start Tribunal' }))
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent(/could not be completed/i)
-    expect(alert).toHaveTextContent(/no language model is connected/i)
+    // Specific enough to act on: which service, at which address.
+    expect(alert).toHaveTextContent(/proxy could not be reached at http:\/\/localhost:8787/i)
 
     expect(screen.queryByRole('region', { name: TRANSCRIPT_HEADING })).toBeNull()
     expect(screen.queryByRole('region', { name: JUDICIAL_OPINIONS_HEADING })).toBeNull()
@@ -353,7 +373,45 @@ describe('when the tribunal cannot be run', () => {
     }
   })
 
+  it('surfaces a missing provider credential through the same error state', async () => {
+    stubProxyResponse(503, {
+      error: {
+        code: 'missing_credential',
+        message: `${['ANTHROPIC', 'API_KEY'].join('_')} is not set in the proxy process.`,
+      },
+    })
+    render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start Tribunal' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(/could not be completed/i)
+    expect(alert).toHaveTextContent(new RegExp(['ANTHROPIC', 'API_KEY'].join('_')))
+    expect(alert).toHaveTextContent(/server environment/i)
+
+    expect(screen.queryByRole('region', { name: TRANSCRIPT_HEADING })).toBeNull()
+    expect(screen.queryByRole('region', { name: JUDICIAL_OPINIONS_HEADING })).toBeNull()
+  })
+
+  it('surfaces a provider rejection without inventing a result', async () => {
+    stubProxyResponse(502, {
+      error: { code: 'provider_error', message: 'the provider answered 429: rate limited.' },
+    })
+    const { container } = render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start Tribunal' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(/the provider answered 429: rate limited\./i)
+
+    const text = container.textContent ?? ''
+    for (const verdict of VERDICTS) {
+      expect(text).not.toContain(verdict)
+    }
+  })
+
   it('re-enables the button so the run can be retried', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'))
     render(<App />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Start Tribunal' }))
