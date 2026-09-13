@@ -215,8 +215,14 @@ final report (D6).
 D2–D5 are resolved in this commit and re-verified above, including by
 reproducing QA's own runtime probe. D1 and D6 are addressed in §9.
 
-Re-running independent QA against this tree is still required; this report is
-the integrator's own verification, not a substitute for it.
+Independent QA has since been re-run against the integrated tree. It found no
+functional defect: it reproduced all four gate results, drove both a dev run
+and a production build in headless Chromium, and independently re-tested
+ordering, transcript propagation, judge independence, strict verdict
+validation, duplicate-run prevention, the error state and the no-combined-
+verdict rule. Its one raised defect is documentation-only — the stale root
+`README.md`, recorded as D7 in §9 and specified in §9.1. It also left a
+non-blocking hardening note for Mission 003, recorded in §11.
 
 ## 9. Findings and fixes
 
@@ -228,6 +234,7 @@ the integrator's own verification, not a substitute for it.
 | D4 — unchanged Start Tribunal UI | Fixed: running state, re-entry guard, transcript, three opinions, honest error state. Re-verified by rendering `<App />` and clicking for real. |
 | D5 — zero Mission 002 tests | Fixed: 55 new tests; all 12 criteria covered. |
 | D6 — no durable evidence, no final report | **Partially fixed.** This report exists and is committed, but `.agent/evidence/` and `.agent/missions/mission-002/final_report.json` are outside the permitted write scope and still need to be written by the orchestrator. |
+| D7 — `README.md` still documents the Mission 001 state | **Not fixable from here.** `README.md` is at the repo root, outside this agent's `src`-only write scope. It is the only committed top-level description of the product and it now contradicts what this commit ships — it tells a reader the Tribunal Engine does not exist. The required corrections are specified in §9.1 and must be applied by the orchestrator. |
 
 Findings made during the fix, beyond QA's list:
 
@@ -245,6 +252,96 @@ Findings made during the fix, beyond QA's list:
   status` reports every file as modified. `src` was normalized to LF (content
   identical, hashes verified) and only `src` paths were staged, so no unrelated
   file was swept into the commit.
+
+### 9.1 Outstanding: the root `README.md` is stale and now false
+
+Raised by independent QA against the integrated tree. Line numbers are against
+the currently committed `README.md`.
+
+| Line | Current text | Why it is wrong now |
+| --- | --- | --- |
+| 88 | "Mission 001 builds the foundation only. It works today:" | Frames the whole build as pre-engine. |
+| 92–93 | "`Start Tribunal` is a real, enabled button that states plainly that running the tribunal is not implemented yet" | True of a **production** build only. In a dev run the button executes `runTribunal` and renders a four-entry transcript plus three opinions. The README never distinguishes the two builds. |
+| 96–97 | "Deliberately not built yet: the tribunal engine (the turn loop, the transcript and the opinions screen)" | Flatly false. `src/tribunal/engine.ts`, `TranscriptSection.tsx` and `JudicialOpinionsSection.tsx` all exist and are exercised. |
+| 34 | "`src/llm/` LlmClient interface + not-implemented stub" | Omits `fakeClient.ts`, which dev mode wires up. |
+| 38–53 | the `src` file map | Omits `src/tribunal/` entirely, omits `llm/fakeClient.ts`, and the components line omits `TranscriptSection` and `JudicialOpinionsSection`. |
+| 25–26 | "no state-management library, because nothing in Mission 001 needs one" | Still scoped to Mission 001. |
+| 109 | "open the printed http://localhost:5173" | Minor: vite prints whichever port it binds; QA's run bound 5174. |
+
+"No real LLM provider yet" is still correct and must stay.
+
+Replacement text, ready to apply. Layer diagram (lines 33–36):
+
+````
+src/data/     canonical case facts, the 7 agent profiles, prompt builders   <- source of truth
+src/llm/      LlmClient interface, not-implemented stub, deterministic fake <- the seam for a real model
+src/tribunal/ runTribunal: the 4-then-3 turn loop and the verdict parser    <- code orchestrates
+src/          App.tsx + components/ render the screen and a run's results
+````
+
+File map (lines 38–53):
+
+````
+src/
+  data/
+    types.ts            Verdict, Side, profiles, transcript, judge opinion, TribunalResult
+    case.ts             case identity, central question, 11 canonical facts, neutral summary
+    representatives.ts  the 4 representative profiles, split by side
+    judges.ts           the 3 judicial reasoning profiles
+    prompts.ts          buildRepresentativePrompt / buildJudgePrompt / formatTranscript
+    index.ts            the public barrel — import from './data', not from the files above
+  llm/
+    client.ts           LlmClient interface, ChatRequest, and a stub that always rejects
+    fakeClient.ts       deterministic offline client — tests and dev verification only
+  tribunal/
+    engine.ts           runTribunal: speaking and judging order, transcript, TribunalRunError
+    verdict.ts          parseJudgeResponse / normalizeVerdict, InvalidVerdictError
+    index.ts            the public barrel — import from './tribunal'
+  components/           TribunalHeader, CaseSummarySection, RepresentativeSection,
+                        JudgesSection, ParticipantCard, StartTribunalSection,
+                        TranscriptSection, JudicialOpinionsSection
+  App.tsx               composes the screen; receives its LlmClient by injection
+  main.tsx              mounts it and picks the client for the build
+````
+
+"What this build does and does not do" (lines 86–101), replacing everything
+under that heading:
+
+````
+Mission 002 adds the Tribunal Engine on top of the Mission 001 foundation. What
+pressing the button does depends on which build you are looking at, so the two
+are described separately.
+
+Both builds render the first screen: the title, the case name, a neutral case
+summary and the central question, both sides' representatives, and the three
+judges. The canonical data and the prompt builders are complete and covered by
+tests.
+
+**A production build** (`npm run build`) has no model connected.
+`createLlmClient()` returns a stub that rejects with `LlmNotImplementedError`,
+so `Start Tribunal` fails honestly — it says that no language model is
+connected to this build — rather than fabricating a result. The fake client
+below sits behind a compile-time `import.meta.env.DEV` branch and is not in the
+production bundle at all.
+
+**A dev run** (`npm run dev`) injects `createFakeLlmClient()` so the engine can
+actually be exercised. `Start Tribunal` runs `runTribunal`: the four
+representatives speak in order — Jon Snow, Tyrion Lannister, Daenerys
+Targaryen, Grey Worm — each given the transcript so far, then the three judges
+are asked independently, and the screen renders the transcript and three
+separate opinions. Every line of that content is mechanically generated
+placeholder text: it is not an argument and not a finding about the case, and
+the screen carries a visible dev-preview warning saying so.
+
+Still not built: any real LLM provider. When one arrives it must sit behind a
+server-side proxy — a provider API key must never be shipped to or read from
+the browser. There is still no combined or majority verdict; the three opinions
+stand separately by design.
+````
+
+Also change line 25–26 "because nothing in Mission 001 needs one" to "because
+nothing in this build needs one", line 88's lead-in as shown above, and line
+109's comment to "start the dev server, then open the URL it prints".
 
 ## 10. Confirmation: no real provider, no secret
 
@@ -277,3 +374,16 @@ else:
 Explicitly still out of scope: retries, streaming, auth, persistence, routing,
 multiple providers, and any change to the engine. `runTribunal` should not need
 to be touched — that is the test of whether this mission's seam held.
+
+**Hardening note carried forward from QA (non-blocking, no action taken).**
+`parseJudgeResponse` takes the *first* `VERDICT:` line and treats the rest of
+the reply as the opinion. A reply carrying two contradicting verdict lines
+resolves silently to the first, and the contradicting line is then displayed
+inside the rendered opinion text — which diverges from `verdict.ts`'s own
+docstring claim that it throws when a reply cannot be read as *exactly one*
+valid verdict. Relatedly, reasoning placed on the verdict line itself
+(`VERDICT: Justified — the king had no choice`) is rejected outright. Neither
+can occur with the fake client, and both are defensible today given the
+prompt-specified reply format and the fail-clearly rule, so this commit changes
+nothing. They are worth revisiting in step 1 above, when a real provider starts
+producing free-form output.
