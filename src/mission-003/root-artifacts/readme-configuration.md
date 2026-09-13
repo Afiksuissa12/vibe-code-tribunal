@@ -85,9 +85,9 @@ origin in dev. Both are optional; the implementation is correct without either.
 The proxy reads the key from its own process environment and **loads no dotenv
 file**. There is nothing to create, so a real `.env` never has to exist on disk
 for a live run — pass the key on the command line as above, or export it in the
-shell. If you do keep one anyway, make sure `.env` is gitignored first (see
-`src/mission-003/root-artifacts/gitignore.additions.txt`; the current
-`.gitignore` covers `.env.local` but not a plain `.env`).
+shell. If you do keep one anyway, the root `.gitignore` now covers `.env` and
+`.env.*`, with `!.env.example` last so only the names-only example stays
+tracked.
 
 Never commit an API key.
 

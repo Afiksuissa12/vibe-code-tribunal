@@ -28,3 +28,10 @@ dist-ssr
 .agent-inbox/
 .agent-outbox/
 .worktrees/
+
+# Local environment files — may contain a real ANTHROPIC_API_KEY.
+# The negation comes last so the committed, names-only .env.example stays
+# tracked while every real variant is ignored.
+.env
+.env.*
+!.env.example
