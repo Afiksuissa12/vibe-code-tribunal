@@ -10,8 +10,8 @@
  * string it emits is prefixed with `PLACEHOLDER_PREFIX`.
  *
  * There is no network call, no SDK, no API key and no environment lookup here,
- * and there must never be one: a real provider arrives behind this same
- * `LlmClient` interface in a later mission.
+ * and there must never be one: the real provider added in Mission 003 sits
+ * behind this same `LlmClient` interface, in `./anthropicClient`.
  */
 
 import { JUDGE_TURN_CUE, VERDICTS, VERDICT_LABEL } from '../data'
