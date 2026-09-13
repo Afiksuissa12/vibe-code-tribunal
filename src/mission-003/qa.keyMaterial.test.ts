@@ -34,7 +34,7 @@
 /// <reference types="node" />
 
 import { readFileSync, readdirSync } from 'node:fs'
-import { relative, resolve } from 'node:path'
+import { relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /** `src/`, resolved from this file rather than the cwd. */
@@ -145,7 +145,14 @@ function collectAllFiles(directory: string, files: SourceFile[] = []): SourceFil
     }
 
     if (entry.isFile()) {
-      files.push({ path: relative(SRC_ROOT, path), contents: readFileSync(path, 'utf8') })
+      // Normalized to forward slashes: `path.relative` returns backslash
+      // separators on Windows, which would otherwise make every '/'-joined
+      // path assertion below fail on that platform despite the scan itself
+      // being correct.
+      files.push({
+        path: relative(SRC_ROOT, path).split(sep).join('/'),
+        contents: readFileSync(path, 'utf8'),
+      })
     }
   }
 
